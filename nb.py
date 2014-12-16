@@ -90,7 +90,7 @@ def processBatch(cookieStore, cursor, batch):
     for story in storylist:
         if (story['story_feed_id'] == HN_FEED_ID):     #  and story['story_hash']==hash)
             hnurl = getHNUrl(story['story_content'])
-            coCo = getCommentCount(hnurl, cookieStore)
+            coCo = getCommentCount(hnurl)
 
             cursor.execute("INSERT INTO stories (hash, added, hnurl, url, comments) VALUES (?, ?, ?, ?, ?)",
                            (story['story_hash'], story['story_date'], hnurl, story['story_permalink'], coCo,))
@@ -111,7 +111,7 @@ def parseStory(content):
     commentCount = sub.split()[-1]
     return commentCount
 
-def getCommentCount(hnurl, mycookies):
+def getCommentCount(hnurl):
     commentCount = 0
     #url = ''
     #stories = requests.get(nb + '/reader/starred_stories', cookies=mycookies, data=storyHash)
