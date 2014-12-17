@@ -65,19 +65,28 @@ def get_hn_url(content):
 
 
 # Parse HN story to find how many comments there are
-# Aargh: HN stories are not well-formed XML.
+# Note: HN stories are not well-formed XML, so ElementTree is out.
+# Beautiful Soup is probably a better solution than the below...
 def parse_story(content):
-    index = content.find("comments")
-    # TODO: fill in the blanks: hop back a few characters, tokenize, take (len-1)th token
-    sub = content[index - 5:index]  # assume <100k comments
-    comment_count = sub.split()[-1]
-    return 0  # comment_count
+    index = content.find(" comments<")
+    # no comments, or exactly 1 comment
+    if index != -1:
+        sub = content[index - 5:index]  # assume <100k comments
+        comment_count = sub.split('>')[-1]
+    else:
+        comment_count = -1
+    return comment_count
 
 
 def get_comment_count(hnurl):
     comment_count = 0
 
-    story = requests.get(hnurl)
+    try:
+        story = requests.get(hnurl)
+    except requests.exceptions.RequestException as e:
+        print "hnurl: " + hnurl
+        print e
+        
     comment_count = parse_story(story.text)
 
     return comment_count
