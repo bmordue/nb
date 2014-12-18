@@ -1,9 +1,10 @@
 __author__ = 'bmordue'
 
+import constants
 import requests
 import json
 import sqlite3
-import constants
+from bs4 import BeautifulSoup
 
 
 def populate():
@@ -63,18 +64,10 @@ def process_batch(cookie_store, cursor, batch):
 def get_hn_url(content):
     return content.split('"')[1]
 
-
 # Parse HN story to find how many comments there are
-# Note: HN stories are not well-formed XML, so ElementTree is out.
-# Beautiful Soup is probably a better solution than the below...
 def parse_story(content):
-    index = content.find(" comments<")
-    # no comments, or exactly 1 comment
-    if index != -1:
-        sub = content[index - 5:index]  # assume <100k comments
-        comment_count = sub.split('>')[-1]
-    else:
-        comment_count = -1
+    soup = BeautifulSoup(content)
+    comment_count = len(soup.find_all("span",{"class": "comment"}))
     return comment_count
 
 
