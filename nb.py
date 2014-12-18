@@ -13,7 +13,7 @@ def populate():
     c = conn.cursor()
     c.execute('''DROP TABLE IF EXISTS stories''')
     c.execute('''CREATE TABLE IF NOT EXISTS stories
-             (hash text, hnurl text, url text, added text, comments integer)''')
+             (hash TEXT, hnurl TEXT, url TEXT, added TEXT, comments INTEGER, (UNIQUE hash)''')
 
     r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS)
     mycookies = r.cookies
