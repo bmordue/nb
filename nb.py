@@ -13,7 +13,7 @@ def populate():
     c = conn.cursor()
     c.execute('''DROP TABLE IF EXISTS stories''')
     c.execute('''CREATE TABLE IF NOT EXISTS stories
-             (hash TEXT, hnurl TEXT, url TEXT, added TEXT, comments INTEGER, (UNIQUE hash)''')
+             (hash TEXT UNIQUE, hnurl TEXT, url TEXT, added TEXT, comments INTEGER)''')
 
     r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS)
     mycookies = r.cookies
@@ -55,10 +55,17 @@ def process_batch(cookie_store, cursor, batch):
     for story in storylist:
         if story['story_feed_id'] == constants.NB_HN_FEED_ID:
             hnurl = get_hn_url(story['story_content'])
-            count = get_comment_count(hnurl)
+#            count = get_comment_count(hnurl)
 
-            cursor.execute("INSERT INTO stories (hash, added, hnurl, url, comments) VALUES (?, ?, ?, ?, ?)",
-                           (story['story_hash'], story['story_date'], hnurl, story['story_permalink'], count,))
+#            cursor.execute("INSERT INTO stories (hash, added, hnurl, url, comments) VALUES (?, ?, ?, ?, ?)",
+#                           (story['story_hash'], story['story_date'], hnurl, story['story_permalink'], count,))
+
+            cursor.execute("INSERT INTO stories (hash, added, hnurl, url) VALUES (?, ?, ?, ?)",
+                           (story['story_hash'], story['story_date'], hnurl, story['story_permalink'],))
+
+# read through DB for rows without comment count, then add it
+def add_comment_counts():
+    pass
 
 
 def get_hn_url(content):
