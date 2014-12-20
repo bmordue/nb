@@ -83,12 +83,10 @@ def get_comment_count(hnurl):
 
     try:
         story = requests.get(hnurl)
+        comment_count = parse_story(story.text)
     except requests.exceptions.RequestException as e:
         print "hnurl: " + hnurl
         print e
-        
-    comment_count = parse_story(story.text)
-
     return comment_count
 
 
