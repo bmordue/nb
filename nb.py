@@ -66,11 +66,10 @@ def add_comment_counts():
 
     cursor.execute("SELECT hnurl FROM stories WHERE comments IS NULL")
     rows = cursor.fetchall()
-    for i, row in enumerate(rows):
+    for row in rows:
         url = row[0]
         count = get_comment_count(url)
         cursor.execute("UPDATE stories SET comments = ? WHERE hnurl = ?", (count, url))
-        print i
 
     conn.commit()
     conn.close()
@@ -98,11 +97,10 @@ def get_comment_count(hnurl):
     return comment_count
 
 
-def comment_counts():
-    print 'Assuming DB has been populated, add comment counts for each entry'
 
 
 if __name__ == "__main__":
     print "__main__"
 #    populate()
     add_comment_counts()
+#    prune_favourites()
