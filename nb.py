@@ -55,40 +55,46 @@ def process_batch(cookie_store, cursor, batch):
     for story in storylist:
         if story['story_feed_id'] == constants.NB_HN_FEED_ID:
             hnurl = get_hn_url(story['story_content'])
-#            count = get_comment_count(hnurl)
-
-#            cursor.execute("INSERT INTO stories (hash, added, hnurl, url, comments) VALUES (?, ?, ?, ?, ?)",
-#                           (story['story_hash'], story['story_date'], hnurl, story['story_permalink'], count,))
-
             cursor.execute("INSERT INTO stories (hash, added, hnurl, url) VALUES (?, ?, ?, ?)",
                            (story['story_hash'], story['story_date'], hnurl, story['story_permalink'],))
 
+
 # read through DB for rows without comment count, then add it
 def add_comment_counts():
-    pass
+    conn = sqlite3.connect(constants.DATABASE_NAME)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT hnurl FROM stories WHERE comments IS NULL")
+    rows = cursor.fetchall()
+    for i, row in enumerate(rows):
+        url = row[0]
+        count = get_comment_count(url)
+        cursor.execute("UPDATE stories SET comments = ? WHERE hnurl = ?", (count, url))
+        print i
+
+    conn.commit()
+    conn.close()
 
 
 def get_hn_url(content):
     return content.split('"')[1]
 
+
 # Parse HN story to find how many comments there are
 def parse_story(content):
     soup = BeautifulSoup(content)
-    comment_count = len(soup.find_all("span",{"class": "comment"}))
+    comment_count = len(soup.find_all("span", {"class": "comment"}))
     return comment_count
 
 
 def get_comment_count(hnurl):
     comment_count = 0
-
     try:
         story = requests.get(hnurl)
+        comment_count = parse_story(story.text)
     except requests.exceptions.RequestException as e:
         print "hnurl: " + hnurl
         print e
-        
-    comment_count = parse_story(story.text)
-
     return comment_count
 
 
@@ -98,5 +104,5 @@ def comment_counts():
 
 if __name__ == "__main__":
     print "__main__"
-    populate()
-    comment_counts()
+#    populate()
+    add_comment_counts()
