@@ -97,27 +97,27 @@ def get_comment_count(hnurl):
     return comment_count
 
 
-def remove_favourite(story_hash):
+def remove_star(story_hash):
     print ('Remove story with hash %s from NB favourites', story_hash)
     r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS)
     mycookies = r.cookies
-    resp = requests.post(constants.NB_ENDPOINT + '/reader/mark_story_hash_as_unstarred', {'story_hash':story_hash},cookies=mycookies)
+    requests.post(constants.NB_ENDPOINT + '/reader/mark_story_hash_as_unstarred', {'story_hash':story_hash},cookies=mycookies)
 
 
-def prune_favourites():
+def prune_starred():
     conn = sqlite3.connect(constants.DATABASE_NAME)
     cursor = conn.cursor()
 
     cursor.execute("SELECT hash FROM stories WHERE (comments < ?)", (constants.COMMENTS_THRESHOLD,))
     rows = cursor.fetchall()
     for row in rows:
-        remove_favourite(row[0])
+        remove_star(row[0])
 
     conn.commit()
     conn.close()
 
 
-def check_if_favourite(story_hash):
+def check_if_starred(story_hash):
     r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS)
     mycookies = r.cookies
     hashes = requests.get(constants.NB_ENDPOINT + '/reader/starred_story_hashes', cookies=mycookies)
@@ -133,4 +133,4 @@ if __name__ == "__main__":
     print "__main__"
     populate()
     add_comment_counts()
-    prune_favourites()
+    prune_starred()
