@@ -10,3 +10,4 @@ BATCH_SIZE = 10 # how many batches to parse and enter in DB in one go
 NB_USERNAME = os.getenv('NB_USERNAME','No username')
 NB_PASSWORD = os.getenv('NB_PASSWORD','No password')
 NB_CREDENTIALS = {'username': NB_USERNAME, 'password': NB_PASSWORD}
+COMMENTS_THRESHOLD = 20
