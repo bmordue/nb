@@ -22,7 +22,7 @@ def populate():
 
     hashlist = hashes.json()['starred_story_hashes']
 
-    print 'Size of hashlist is ' + str(len(hashlist))  # 3254
+    print 'Size of hashlist is ' + str(len(hashlist))
 
     i = 0
     batch = []
@@ -108,7 +108,7 @@ def remove_star(story_hash):
 
 
 def prune_starred():
-    print ('Remove all stars on stories with less than %i comments', constants.COMMENTS_THRESHOLD)
+    print 'Remove all stars on stories with less than %i comments' % constants.COMMENTS_THRESHOLD
     conn = sqlite3.connect(constants.DATABASE_NAME)
     cursor = conn.cursor()
 
@@ -116,7 +116,7 @@ def prune_starred():
     rows = cursor.fetchall()
     for row in rows:
         remove_star(row[0])
-    print ('Removed %i stars', len(rows))
+    print 'Removed %i stars' % len(rows)
 
     conn.commit()
     conn.close()
