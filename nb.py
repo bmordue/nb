@@ -101,7 +101,8 @@ def remove_star(story_hash):
     print ('Remove story with hash %s from NB favourites', story_hash)
     r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS)
     mycookies = r.cookies
-    requests.post(constants.NB_ENDPOINT + '/reader/mark_story_hash_as_unstarred', {'story_hash':story_hash},cookies=mycookies)
+    requests.post(constants.NB_ENDPOINT + '/reader/mark_story_hash_as_unstarred',
+                  {'story_hash': story_hash}, cookies=mycookies)
 
 
 def prune_starred():
