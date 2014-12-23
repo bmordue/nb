@@ -41,6 +41,7 @@ def populate():
     process_batch(mycookies, c, batch)
     conn.commit()
     conn.close()
+    print 'Finished adding story hashes to DB'
 
 
 # Print 'Process a batch of hashes and add details to DB'
@@ -61,6 +62,7 @@ def process_batch(cookie_store, cursor, batch):
 
 # read through DB for rows without comment count, then add it
 def add_comment_counts():
+    print 'Add comment counts to stories in DB'
     conn = sqlite3.connect(constants.DATABASE_NAME)
     cursor = conn.cursor()
 
@@ -73,6 +75,7 @@ def add_comment_counts():
 
     conn.commit()
     conn.close()
+    print 'Finished adding comment counts'
 
 
 def get_hn_url(content):
@@ -98,7 +101,6 @@ def get_comment_count(hnurl):
 
 
 def remove_star(story_hash):
-    print ('Remove story with hash %s from NB favourites', story_hash)
     r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS)
     mycookies = r.cookies
     requests.post(constants.NB_ENDPOINT + '/reader/mark_story_hash_as_unstarred',
@@ -106,6 +108,7 @@ def remove_star(story_hash):
 
 
 def prune_starred():
+    print ('Remove all stars on stories with less than %i comments', constants.COMMENTS_THRESHOLD)
     conn = sqlite3.connect(constants.DATABASE_NAME)
     cursor = conn.cursor()
 
@@ -113,9 +116,11 @@ def prune_starred():
     rows = cursor.fetchall()
     for row in rows:
         remove_star(row[0])
+    print ('Removed %i stars', len(rows))
 
     conn.commit()
     conn.close()
+    print 'Finished pruning stars'
 
 
 def check_if_starred(story_hash):
@@ -135,3 +140,4 @@ if __name__ == "__main__":
     populate()
     add_comment_counts()
     prune_starred()
+    print 'Done.'
