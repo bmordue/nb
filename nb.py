@@ -72,8 +72,8 @@ def add_comment_counts():
         url = row[0]
         count = get_comment_count(url)
         cursor.execute("UPDATE stories SET comments = ? WHERE hnurl = ?", (count, url))
+        conn.commit()
 
-    conn.commit()
     conn.close()
     print 'Finished adding comment counts'
 
@@ -93,7 +93,10 @@ def get_comment_count(hnurl):
     comment_count = 0
     try:
         story = requests.get(hnurl)
-        comment_count = parse_story(story.text)
+        if story.status == 200:
+            comment_count = parse_story(story.text)
+        else:
+            print "Request for %s returned %s response" % hnurl, story.status
     except requests.exceptions.RequestException as e:
         print "hnurl: " + hnurl
         print e
@@ -116,10 +119,11 @@ def prune_starred():
     rows = cursor.fetchall()
     for row in rows:
         remove_star(row[0])
-    print 'Removed %i stars' % len(rows)
 
     conn.commit()
     conn.close()
+    print 'Removed %i stars' % len(rows)
+
     print 'Finished pruning stars'
 
 
@@ -137,7 +141,7 @@ def check_if_starred(story_hash):
 
 if __name__ == "__main__":
     print "__main__"
-    populate()
+#    populate()
     add_comment_counts()
-    prune_starred()
+#    prune_starred()
     print 'Done.'
