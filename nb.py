@@ -93,10 +93,10 @@ def get_comment_count(hnurl):
     comment_count = 0
     try:
         story = requests.get(hnurl)
-        if story.status == 200:
+        if story.status_code == 200:
             comment_count = parse_story(story.text)
         else:
-            print "Request for %s returned %s response" % hnurl, story.status
+            print "Request for %s returned %s response" % hnurl, story.status_code
             return None
     except requests.exceptions.RequestException as e:
         print "hnurl: " + hnurl
