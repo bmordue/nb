@@ -71,9 +71,9 @@ def add_comment_counts():
     for row in rows:
         url = row[0]
         count = get_comment_count(url)
-        cursor.execute("UPDATE stories SET comments = ? WHERE hnurl = ?", (count, url))
-        conn.commit()
-
+        if count is not None:
+            cursor.execute("UPDATE stories SET comments = ? WHERE hnurl = ?", (count, url))
+            conn.commit()
     conn.close()
     print 'Finished adding comment counts'
 
@@ -97,6 +97,7 @@ def get_comment_count(hnurl):
             comment_count = parse_story(story.text)
         else:
             print "Request for %s returned %s response" % hnurl, story.status
+            return None
     except requests.exceptions.RequestException as e:
         print "hnurl: " + hnurl
         print e
