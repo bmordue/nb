@@ -137,6 +137,9 @@ def check_if_starred(story_hash):
 
 if __name__ == "__main__":
     print "__main__"
+    import sys
+    if sys.argv[0]:
+        constants.MAX_PARSE = sys.argv[0]
     populate()
     add_comment_counts()
     prune_starred()
