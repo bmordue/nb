@@ -15,10 +15,10 @@ def populate():
     c.execute('''CREATE TABLE IF NOT EXISTS stories
              (hash TEXT UNIQUE, hnurl TEXT, url TEXT, added TEXT, comments INTEGER)''')
 
-    r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS)
+    r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS, verify=False)
     mycookies = r.cookies
 
-    hashes = requests.get(constants.NB_ENDPOINT + '/reader/starred_story_hashes', cookies=mycookies)
+    hashes = requests.get(constants.NB_ENDPOINT + '/reader/starred_story_hashes', cookies=mycookies, verify=False)
 
     hashlist = hashes.json()['starred_story_hashes']
 
@@ -50,7 +50,7 @@ def process_batch(cookie_store, cursor, batch):
 
     for a_hash in batch:
         req_str += 'h=' + a_hash + '&'
-    stories = requests.get(req_str, cookies=cookie_store)
+    stories = requests.get(req_str, cookies=cookie_store, verify=False)
     storylist = json.loads(stories.text)['stories']
 
     for story in storylist:
@@ -92,7 +92,7 @@ def parse_story(content):
 def get_comment_count(hnurl):
     comment_count = 0
     try:
-        story = requests.get(hnurl)
+        story = requests.get(hnurl, verify=False)
         if story.status_code == 200:
             comment_count = parse_story(story.text)
         else:
@@ -105,10 +105,10 @@ def get_comment_count(hnurl):
 
 
 def remove_star(story_hash):
-    r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS)
+    r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS, verify=False)
     mycookies = r.cookies
     requests.post(constants.NB_ENDPOINT + '/reader/mark_story_hash_as_unstarred',
-                  {'story_hash': story_hash}, cookies=mycookies)
+                  {'story_hash': story_hash}, cookies=mycookies, verify=False)
 
 
 def prune_starred():
@@ -129,9 +129,9 @@ def prune_starred():
 
 
 def check_if_starred(story_hash):
-    r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS)
+    r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS, verify=False)
     mycookies = r.cookies
-    hashes = requests.get(constants.NB_ENDPOINT + '/reader/starred_story_hashes', cookies=mycookies)
+    hashes = requests.get(constants.NB_ENDPOINT + '/reader/starred_story_hashes', cookies=mycookies, verify=False)
     hashlist = hashes.json()['starred_story_hashes']
 
     if story_hash in hashlist:
