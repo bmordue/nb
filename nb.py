@@ -15,7 +15,8 @@ def populate():
     c = conn.cursor()
     c.execute('''DROP TABLE IF EXISTS stories''')
     c.execute('''CREATE TABLE IF NOT EXISTS stories
-             (hash TEXT UNIQUE, hnurl TEXT, url TEXT, added TEXT, comments INTEGER)''')
+             (hash TEXT UNIQUE, hnurl TEXT, url TEXT, added TEXT, comments INTEGER,
+             starred BOOLEAN DEFAULT 1)''')
 
     r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS, verify=constants.VERIFY)
     mycookies = r.cookies
@@ -126,6 +127,7 @@ def remove_star(story_hash):
     mycookies = r.cookies
     requests.post(constants.NB_ENDPOINT + '/reader/mark_story_hash_as_unstarred',
                   {'story_hash': story_hash}, cookies=mycookies, verify=constants.VERIFY)
+    return True
 
 
 def prune_starred():
@@ -133,12 +135,13 @@ def prune_starred():
     conn = sqlite3.connect(constants.DATABASE_FILENAME)
     cursor = conn.cursor()
 
-    cursor.execute("SELECT hash FROM stories WHERE (comments < ?)", (constants.COMMENTS_THRESHOLD,))
+    cursor.execute("SELECT hash FROM stories WHERE comments < ? AND starred = 1", (constants.COMMENTS_THRESHOLD,))
     rows = cursor.fetchall()
     for row in rows:
-        remove_star(row[0])
+        if remove_star(row[0]):
+            cursor.execute("UPDATE stories SET starred = 0 WHERE hash = ?", row)
+            conn.commit()
 
-    conn.commit()
     conn.close()
     print 'Removed %i stars' % len(rows)
 
