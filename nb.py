@@ -122,9 +122,7 @@ def get_comment_count(hnurl):
     return comment_count
 
 
-def remove_star(story_hash):
-    r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS, verify=constants.VERIFY)
-    mycookies = r.cookies
+def remove_star(story_hash, mycookies):
     requests.post(constants.NB_ENDPOINT + '/reader/mark_story_hash_as_unstarred',
                   {'story_hash': story_hash}, cookies=mycookies, verify=constants.VERIFY)
     return True
@@ -132,13 +130,16 @@ def remove_star(story_hash):
 
 def prune_starred():
     print 'Remove all stars on stories with less than %i comments' % constants.COMMENTS_THRESHOLD
+
+    r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS, verify=constants.VERIFY)
+    mycookies = r.cookies
+
     conn = sqlite3.connect(constants.DATABASE_FILENAME)
     cursor = conn.cursor()
-
     cursor.execute("SELECT hash FROM stories WHERE comments < ? AND starred = 1", (constants.COMMENTS_THRESHOLD,))
     rows = cursor.fetchall()
     for row in rows:
-        if remove_star(row[0]):
+        if remove_star(row[0], mycookies):
             cursor.execute("UPDATE stories SET starred = 0 WHERE hash = ?", row)
             conn.commit()
 
