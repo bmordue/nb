@@ -93,6 +93,40 @@ def parse_story(content):
     return comment_count
 
 
+# eg request_with_backoff(url, on_success)
+# eg request_with_backoff(hnurl, parse_story)
+# Hmm. Falls down on POSTs. :-( Needs more treatment
+# TODO: cf requests PreparedRequest!
+def get_with_backoff(url, on_success):
+    try:
+        backoff = constants.BACKOFF_START
+        resp = requests.get(url, verify=constants.VERIFY)
+        while (resp.status_code != 200):
+            if resp.status_code in [403, 500, 503]:  # exponential backoff
+                print "Request for %s returned %s response" % (url, resp.status_code)
+                if backoff < constants.MAX_BACKOFF:
+                    print "Backing off %s seconds" % backoff
+                    sleep(backoff)
+                    resp = requests.get(url, verify=constants.VERIFY)
+                    backoff = backoff * constants.BACKOFF_FACTOR
+                else:
+                    print "Giving up after %s seconds for %s" % (backoff, url)
+                    return None
+            elif resp.status_code == 520:
+                print "520 response, skipping %" % url
+                return None
+            else:
+                print "Request for %s returned unhandled %s response" % (url, resp.status_code)
+                raise requests.exceptions.RequestException()
+    except requests.exceptions.RequestException as e:
+        print "url is: %s" % url
+        print e
+        return None
+
+    return on_success(resp)
+
+
+# TODO: DEPRECATE in favour of request_with_backoff()
 def get_comment_count(hnurl):
     comment_count = 0
     try:
@@ -104,7 +138,8 @@ def get_comment_count(hnurl):
                 if backoff < constants.MAX_BACKOFF:
                     print "Backing off %s seconds" % backoff
                     sleep(backoff)
-                    backoff = backoff*2
+                    backoff = backoff * 2
+                    story = requests.get(hnurl, verify=constants.VERIFY)
                 else:
                     print "Giving up after %s seconds for %s" % (backoff, hnurl)
                     return None
@@ -122,6 +157,39 @@ def get_comment_count(hnurl):
     return comment_count
 
 
+# TODO: deprecate in favour of more generic function
+def remove_star_with_backoff(story_hash, mycookies):
+    try:
+        backoff = constants.BACKOFF_START
+        url = constants.NB_ENDPOINT + '/reader/mark_story_hash_as_unstarred'
+        resp = requests.post(url,
+                             {'story_hash': story_hash}, cookies=mycookies, verify=constants.VERIFY)
+        while (resp.status_code != 200):
+            if resp.status_code in [403, 500, 503]:  # exponential backoff
+                print "Request for %s returned %s response" % (url, resp.status_code)
+                if backoff < constants.MAX_BACKOFF:
+                    print "Backing off %s seconds" % backoff
+                    sleep(backoff)
+                    backoff = backoff * constants.BACKOFF_FACTOR
+                    resp = requests.post(url,
+                             {'story_hash': story_hash}, cookies=mycookies, verify=constants.VERIFY)
+                else:
+                    print "Giving up after %s seconds for %s" % (backoff, url)
+                    return False
+            elif resp.status_code == 520:
+                print "520 response, skipping %" % url
+                return False
+            else:
+                print "Request for %s returned unhandled %s response" % (url, resp.status_code)
+                raise requests.exceptions.RequestException()
+    except requests.exceptions.RequestException as e:
+        print "url is: %s" % url
+        print e
+        return False
+
+    return True
+
+# TODO: REMOVE - unused
 def remove_star(story_hash, mycookies):
     requests.post(constants.NB_ENDPOINT + '/reader/mark_story_hash_as_unstarred',
                   {'story_hash': story_hash}, cookies=mycookies, verify=constants.VERIFY)
@@ -138,13 +206,15 @@ def prune_starred():
     cursor = conn.cursor()
     cursor.execute("SELECT hash FROM stories WHERE comments < ? AND starred = 1", (constants.COMMENTS_THRESHOLD,))
     rows = cursor.fetchall()
+    count = 0
     for row in rows:
-        if remove_star(row[0], mycookies):
+        if remove_star_with_backoff(row[0], mycookies):
             cursor.execute("UPDATE stories SET starred = 0 WHERE hash = ?", row)
             conn.commit()
-
+            count += 1
+    conn.commit()
     conn.close()
-    print 'Removed %i stars' % len(rows)
+    print 'Removed %i out of %i candidate stars' % (count, len(rows))
 
     print 'Finished pruning stars'
 
@@ -152,7 +222,8 @@ def prune_starred():
 def check_if_starred(story_hash):
     r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS, verify=constants.VERIFY)
     mycookies = r.cookies
-    hashes = requests.get(constants.NB_ENDPOINT + '/reader/starred_story_hashes', cookies=mycookies, verify=constants.VERIFY)
+    hashes = requests.get(constants.NB_ENDPOINT + '/reader/starred_story_hashes', cookies=mycookies,
+                          verify=constants.VERIFY)
     hashlist = hashes.json()['starred_story_hashes']
 
     if story_hash in hashlist:
@@ -164,10 +235,12 @@ def check_if_starred(story_hash):
 if __name__ == "__main__":
     print "__main__"
     import sys, os
+    sys.stdout = open("nb.log", "w")
     if sys.argv[0]:
         constants.MAX_PARSE = sys.argv[0]
     if not os.path.isfile(constants.DATABASE_FILENAME):
         populate()
     add_comment_counts()
-#    prune_starred()
+    # prune_starred()
     print 'Done.'
+    sys.stdout = sys.__stdout__

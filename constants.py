@@ -13,3 +13,5 @@ NB_CREDENTIALS = {'username': NB_USERNAME, 'password': NB_PASSWORD}
 COMMENTS_THRESHOLD = 20
 VERIFY = True # useful to set to False to use with Charles proxy, but this generates loadsa warnings
 MAX_BACKOFF = 24*60*60  # in seconds
+BACKOFF_START = 5
+BACKOFF_FACTOR = 2
