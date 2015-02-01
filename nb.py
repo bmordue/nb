@@ -101,7 +101,7 @@ def get_with_backoff(url, on_success):
     try:
         backoff = constants.BACKOFF_START
         resp = requests.get(url, verify=constants.VERIFY)
-        while (resp.status_code != 200):
+        while resp.status_code != 200:
             if resp.status_code in [403, 500, 503]:  # exponential backoff
                 print "Request for %s returned %s response" % (url, resp.status_code)
                 if backoff < constants.MAX_BACKOFF:
@@ -113,7 +113,7 @@ def get_with_backoff(url, on_success):
                     print "Giving up after %s seconds for %s" % (backoff, url)
                     return None
             elif resp.status_code == 520:
-                print "520 response, skipping %" % url
+                print "520 response, skipping %s" % url
                 return None
             else:
                 print "Request for %s returned unhandled %s response" % (url, resp.status_code)
@@ -128,23 +128,22 @@ def get_with_backoff(url, on_success):
 
 # TODO: DEPRECATE in favour of request_with_backoff()
 def get_comment_count(hnurl):
-    comment_count = 0
     try:
         backoff = 5
         story = requests.get(hnurl, verify=constants.VERIFY)
-        while (story.status_code != 200):
+        while story.status_code != 200:
             if story.status_code in [403, 500, 503]:  # exponential backoff
                 print "Request for %s returned %s response" % (hnurl, story.status_code)
                 if backoff < constants.MAX_BACKOFF:
                     print "Backing off %s seconds" % backoff
                     sleep(backoff)
-                    backoff = backoff * 2
+                    backoff *= constants.BACKOFF_FACTOR
                     story = requests.get(hnurl, verify=constants.VERIFY)
                 else:
                     print "Giving up after %s seconds for %s" % (backoff, hnurl)
                     return None
             elif story.status_code == 520:
-                print "520 response, skipping %" % hnurl
+                print "520 response, skipping %s" % hnurl
                 return None
             else:
                 print "Request for %s returned unhandled %s response" % (hnurl, story.status_code)
@@ -153,41 +152,41 @@ def get_comment_count(hnurl):
         print "hnurl: " + hnurl
         print e
         return None
-    comment_count = parse_story(story.text)
-    return comment_count
+    return parse_story(story.text)
 
 
 # TODO: deprecate in favour of more generic function
 def remove_star_with_backoff(story_hash, mycookies):
+    backoff = constants.BACKOFF_START
+    unstar_url = constants.NB_ENDPOINT + '/reader/mark_story_hash_as_unstarred'
     try:
-        backoff = constants.BACKOFF_START
-        url = constants.NB_ENDPOINT + '/reader/mark_story_hash_as_unstarred'
-        resp = requests.post(url,
+        resp = requests.post(unstar_url,
                              {'story_hash': story_hash}, cookies=mycookies, verify=constants.VERIFY)
-        while (resp.status_code != 200):
+        while resp.status_code != 200:
             if resp.status_code in [403, 500, 503]:  # exponential backoff
-                print "Request for %s returned %s response" % (url, resp.status_code)
+                print "Request for %s returned %s response" % (unstar_url, resp.status_code)
                 if backoff < constants.MAX_BACKOFF:
                     print "Backing off %s seconds" % backoff
                     sleep(backoff)
                     backoff = backoff * constants.BACKOFF_FACTOR
-                    resp = requests.post(url,
-                             {'story_hash': story_hash}, cookies=mycookies, verify=constants.VERIFY)
+                    resp = requests.post(unstar_url,
+                                         {'story_hash': story_hash}, cookies=mycookies, verify=constants.VERIFY)
                 else:
-                    print "Giving up after %s seconds for %s" % (backoff, url)
+                    print "Giving up after %s seconds for %s" % (backoff, unstar_url)
                     return False
             elif resp.status_code == 520:
-                print "520 response, skipping %" % url
+                print "520 response, skipping %s" % unstar_url
                 return False
             else:
-                print "Request for %s returned unhandled %s response" % (url, resp.status_code)
+                print "Request for %s returned unhandled %s response" % (unstar_url, resp.status_code)
                 raise requests.exceptions.RequestException()
     except requests.exceptions.RequestException as e:
-        print "url is: %s" % url
+        print "url is: %s" % unstar_url
         print e
         return False
 
     return True
+
 
 # TODO: REMOVE - unused
 def remove_star(story_hash, mycookies):
@@ -234,8 +233,9 @@ def check_if_starred(story_hash):
 
 
 if __name__ == "__main__":
-    print "__main__"
-    import sys, os
+    import sys
+    import os
+
 #    sys.stdout = open("nb.log", "w")
     if sys.argv[0]:
         constants.MAX_PARSE = sys.argv[0]
