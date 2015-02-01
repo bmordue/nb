@@ -206,6 +206,7 @@ def prune_starred():
     cursor = conn.cursor()
     cursor.execute("SELECT hash FROM stories WHERE comments < ? AND starred = 1", (constants.COMMENTS_THRESHOLD,))
     rows = cursor.fetchall()
+    print 'Found %i candidates for removal.' % len(rows)
     count = 0
     for row in rows:
         if remove_star_with_backoff(row[0], mycookies):
@@ -235,12 +236,12 @@ def check_if_starred(story_hash):
 if __name__ == "__main__":
     print "__main__"
     import sys, os
-    sys.stdout = open("nb.log", "w")
+#    sys.stdout = open("nb.log", "w")
     if sys.argv[0]:
         constants.MAX_PARSE = sys.argv[0]
     if not os.path.isfile(constants.DATABASE_FILENAME):
         populate()
-    add_comment_counts()
-    # prune_starred()
+#    add_comment_counts()
+    prune_starred()
     print 'Done.'
     sys.stdout = sys.__stdout__
