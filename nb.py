@@ -8,12 +8,16 @@ import sqlite3
 from bs4 import BeautifulSoup
 from time import sleep
 
+INSERT_HASH_QUERY='''IF NOT EXISTS (SELECT hash FROM stories WHERE hash = ?)
+BEGIN
+  INSERT INTO stories (hash, added, hnurl, url) VALUES (?, ?, ?, ?)
+END'''
 
 def populate():
     print 'Set up DB and add a row for each HN story'
     conn = sqlite3.connect(constants.DATABASE_FILENAME)
     c = conn.cursor()
-    c.execute('''DROP TABLE IF EXISTS stories''')
+
     c.execute('''CREATE TABLE IF NOT EXISTS stories
              (hash TEXT UNIQUE, hnurl TEXT, url TEXT, added TEXT, comments INTEGER,
              starred BOOLEAN DEFAULT 1)''')
@@ -60,9 +64,8 @@ def process_batch(cookie_store, cursor, batch):
     for story in storylist:
         if story['story_feed_id'] == constants.NB_HN_FEED_ID:
             hnurl = get_hn_url(story['story_content'])
-            cursor.execute("INSERT INTO stories (hash, added, hnurl, url) VALUES (?, ?, ?, ?)",
-                           (story['story_hash'], story['story_date'], hnurl, story['story_permalink'],))
-
+            cursor.execute(INSERT_HASH_QUERY, (story['story_hash'], story['story_hash'], story['story_date'], hnurl, story['story_permalink'],))
+                           
 
 # read through DB for rows without comment count, then add it
 def add_comment_counts():
