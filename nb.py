@@ -8,6 +8,9 @@ import sqlite3
 from bs4 import BeautifulSoup
 from time import sleep
 
+from populate import populate
+from prune import prune_starred
+
 if __name__ == "__main__":
     import sys
     import os
