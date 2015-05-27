@@ -1,6 +1,9 @@
 __author__ = 'bmordue'
 
 import constants
+import logging
+logger = logging.getLogger('NB')
+
 import requests
 import requests.exceptions
 import json
@@ -54,7 +57,7 @@ def remove_star(story_hash, mycookies):
 
 
 def prune_starred():
-    print 'Remove all stars on stories with less than %i comments' % constants.COMMENTS_THRESHOLD
+    logger.info('Remove all stars on stories with less than {0} comments'.format(constants.COMMENTS_THRESHOLD))
 
     r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS, verify=constants.VERIFY)
     mycookies = r.cookies
@@ -66,7 +69,7 @@ def prune_starred():
     cursor = conn.cursor()
     cursor.execute("SELECT hash FROM stories WHERE comments < %s AND starred = 1", (constants.COMMENTS_THRESHOLD,))
     rows = cursor.fetchall()
-    print 'Found %i candidates for removal.' % len(rows)
+    logger.info('Found {0} candidates for removal.'.format(len(rows)))
     count = 0
     for row in rows:
         if remove_star_with_backoff(row[0], mycookies):
@@ -75,9 +78,9 @@ def prune_starred():
             count += 1
     conn.commit()
     conn.close()
-    print 'Removed %i out of %i candidate stars' % (count, len(rows))
+    logger.info('Removed {0} out of {1} candidate stars'.format(count, len(rows)))
 
-    print 'Finished pruning stars'
+    logger.info('Finished pruning stars')
 
 
 def check_if_starred(story_hash):

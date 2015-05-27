@@ -1,6 +1,9 @@
 __author__ = 'bmordue'
 
 import constants
+import logging
+logger = logging.getLogger('NB')
+
 import requests
 import requests.exceptions
 import json
@@ -16,7 +19,7 @@ TABLE_SETUP_QUERY='''CREATE TABLE IF NOT EXISTS stories
              starred BOOLEAN DEFAULT 1)'''
 
 def populate():
-    print 'Set up DB and add a row for each HN story'
+    logger.info('Set up DB and add a row for each HN story')
     conn = MySQLdb.connect (host = constants.DB_HOST,
                             user = constants.DB_USER,
                             passwd = constants.DB_PASS,
@@ -33,7 +36,7 @@ def populate():
 
     hashlist = hashes.json()['starred_story_hashes']
 
-    print 'Size of hashlist is ' + str(len(hashlist))
+    logger.info('Size of hashlist is ' + str(len(hashlist)))
 
     i = 0
     batch = []
@@ -41,7 +44,7 @@ def populate():
     for ahash in hashlist:
         i += 1
         if i > constants.MAX_PARSE:
-            print 'Reached MAX_PARSE (' + str(constants.MAX_PARSE) + ')'
+            logger.info('Reached MAX_PARSE ({0})'.format(constants.MAX_PARSE))
             break
         if batchcounter > constants.BATCH_SIZE:
             process_batch(mycookies, c, batch)
@@ -53,7 +56,7 @@ def populate():
     process_batch(mycookies, c, batch)
     conn.commit()
     conn.close()
-    print 'Finished adding story hashes to DB'
+    logger.info('Finished adding story hashes to DB')
 
 
 # Print 'Process a batch of hashes and add details to DB'
@@ -76,14 +79,14 @@ def process_batch(cookie_store, cursor, batch):
                 # cursor.execute('''REPLACE INTO stories (hash, added, hnurl, url) VALUES (%s, %s, %s, %s)''', (thehash, date, hnurl, link,))
                 cursor.execute(INSERT_HASH_QUERY, (story['story_hash'], story['story_date'], hnurl, story['story_permalink'],))
     except ValueError as e:
-        print 'Failed to get stories for request ' + req_str
-        print e
+        logger.error('Failed to get stories for request {0}'.format(req_str))
+        logger.error(e)
 
                            
 
 # read through DB for rows without comment count, then add it
 def add_comment_counts():
-    print 'Add comment counts to stories in DB'
+    logger.info('Add comment counts to stories in DB')
     conn = MySQLdb.connect (host = constants.DB_HOST,
                             user = constants.DB_USER,
                             passwd = constants.DB_PASS,
@@ -99,7 +102,7 @@ def add_comment_counts():
             cursor.execute("UPDATE stories SET comments = %s WHERE hnurl = %s", (count, url))
             conn.commit()
     conn.close()
-    print 'Finished adding comment counts'
+    logger.info('Finished adding comment counts')
 
 
 def get_hn_url(content):
@@ -123,24 +126,24 @@ def get_with_backoff(url, on_success):
         resp = requests.get(url, verify=constants.VERIFY)
         while resp.status_code != 200:
             if resp.status_code in [403, 500, 503]:  # exponential backoff
-                print "Request for %s returned %s response" % (url, resp.status_code)
+                logger.debug("Request for {0} returned {1} response".format(url, resp.status_code))
                 if backoff < constants.MAX_BACKOFF:
-                    print "Backing off %s seconds" % backoff
+                    logger.debug("Backing off {0} seconds".format(backoff))
                     sleep(backoff)
                     resp = requests.get(url, verify=constants.VERIFY)
                     backoff = backoff * constants.BACKOFF_FACTOR
                 else:
-                    print "Giving up after %s seconds for %s" % (backoff, url)
+                    logger.debug("Giving up after {0} seconds for {1}".format(backoff, url))
                     return None
             elif resp.status_code == 520:
-                print "520 response, skipping %s" % url
+                logger.debug("520 response, skipping {0}".format(url))
                 return None
             else:
-                print "Request for %s returned unhandled %s response" % (url, resp.status_code)
+                logger.debug("Request for {0} returned unhandled {1} response".format(url, resp.status_code))
                 raise requests.exceptions.RequestException()
     except requests.exceptions.RequestException as e:
-        print "url is: %s" % url
-        print e
+        logger.error("url is: {0}".format(url))
+        logger.error(e)
         return None
 
     return on_success(resp)
