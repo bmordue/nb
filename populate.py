@@ -156,24 +156,24 @@ def get_comment_count(hnurl):
         story = requests.get(hnurl, verify=constants.VERIFY)
         while story.status_code != 200:
             if story.status_code in [403, 500, 503]:  # exponential backoff
-                print "Request for %s returned %s response" % (hnurl, story.status_code)
+                logger.debug("Request for {0} returned {1} response".format(hnurl, story.status_code))
                 if backoff < constants.MAX_BACKOFF:
-                    print "Backing off %s seconds" % backoff
+                    logger.debug("Backing off {0} seconds".format(backoff))
                     sleep(backoff)
                     backoff *= constants.BACKOFF_FACTOR
                     story = requests.get(hnurl, verify=constants.VERIFY)
                 else:
-                    print "Giving up after %s seconds for %s" % (backoff, hnurl)
+                    logger.debug("Giving up after {0} seconds for {1}".format(backoff, hnurl))
                     return None
             elif story.status_code == 520:
-                print "520 response, skipping %s" % hnurl
+                logger.debug("520 response, skipping {0}".format(hnurl))
                 return None
             else:
-                print "Request for %s returned unhandled %s response" % (hnurl, story.status_code)
+                logger.debug("Request for {0} returned unhandled {1} response".format(hnurl, story.status_code))
                 raise requests.exceptions.RequestException()
     except requests.exceptions.RequestException as e:
-        print "hnurl: " + hnurl
-        print e
+        logger.error("hnurl: {0}".format(hnurl)
+        logger.error(e)
         return None
     return parse_story(story.text)
 
