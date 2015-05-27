@@ -4,9 +4,10 @@ import constants
 import requests
 import requests.exceptions
 import json
-import sqlite3
+# import sqlite3
 from bs4 import BeautifulSoup
 from time import sleep
+import MySQLdb
 
 
 
@@ -58,15 +59,18 @@ def prune_starred():
     r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS, verify=constants.VERIFY)
     mycookies = r.cookies
 
-    conn = sqlite3.connect(constants.DATABASE_FILENAME)
+    conn = MySQLdb.connect (host = constants.DB_HOST,
+                            user = constants.DB_USER,
+                            passwd = constants.DB_PASS,
+                            db = constants.DB_NAME)
     cursor = conn.cursor()
-    cursor.execute("SELECT hash FROM stories WHERE comments < ? AND starred = 1", (constants.COMMENTS_THRESHOLD,))
+    cursor.execute("SELECT hash FROM stories WHERE comments < %s AND starred = 1", (constants.COMMENTS_THRESHOLD,))
     rows = cursor.fetchall()
     print 'Found %i candidates for removal.' % len(rows)
     count = 0
     for row in rows:
         if remove_star_with_backoff(row[0], mycookies):
-            cursor.execute("UPDATE stories SET starred = 0 WHERE hash = ?", row)
+            cursor.execute("UPDATE stories SET starred = 0 WHERE hash = %s", row)
             conn.commit()
             count += 1
     conn.commit()

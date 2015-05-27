@@ -4,21 +4,26 @@ import constants
 import requests
 import requests.exceptions
 import json
-import sqlite3
+# import sqlite3
 from bs4 import BeautifulSoup
 from time import sleep
+import MySQLdb
 
-INSERT_HASH_QUERY='''INSERT OR REPLACE INTO stories (hash, added, hnurl, url) VALUES (?, ?, ?, ?)'''
+INSERT_HASH_QUERY='''REPLACE INTO stories (hash, added, hnurl, url) VALUES (%s, %s, %s, %s)'''
 
+TABLE_SETUP_QUERY='''CREATE TABLE IF NOT EXISTS stories
+             (hash VARCHAR(64) UNIQUE, hnurl TEXT, url TEXT, added TEXT, comments INTEGER,
+             starred BOOLEAN DEFAULT 1)'''
 
 def populate():
     print 'Set up DB and add a row for each HN story'
-    conn = sqlite3.connect(constants.DATABASE_FILENAME)
+    conn = MySQLdb.connect (host = constants.DB_HOST,
+                            user = constants.DB_USER,
+                            passwd = constants.DB_PASS,
+                            db = constants.DB_NAME)
     c = conn.cursor()
 
-    c.execute('''CREATE TABLE IF NOT EXISTS stories
-             (hash TEXT UNIQUE, hnurl TEXT, url TEXT, added TEXT, comments INTEGER,
-             starred BOOLEAN DEFAULT 1)''')
+    c.execute(TABLE_SETUP_QUERY)
 
     r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS, verify=constants.VERIFY)
     mycookies = r.cookies
@@ -36,6 +41,7 @@ def populate():
     for ahash in hashlist:
         i += 1
         if i > constants.MAX_PARSE:
+            print 'Reached MAX_PARSE (' + str(constants.MAX_PARSE) + ')'
             break
         if batchcounter > constants.BATCH_SIZE:
             process_batch(mycookies, c, batch)
@@ -57,18 +63,31 @@ def process_batch(cookie_store, cursor, batch):
     for a_hash in batch:
         req_str += 'h=' + a_hash + '&'
     stories = requests.get(req_str, cookies=cookie_store, verify=constants.VERIFY)
-    storylist = json.loads(stories.text)['stories']
+    try:
+        storylist = json.loads(stories.text)['stories']
 
-    for story in storylist:
-        if story['story_feed_id'] == constants.NB_HN_FEED_ID:
-            hnurl = get_hn_url(story['story_content'])
-            cursor.execute(INSERT_HASH_QUERY, (story['story_hash'], story['story_date'], hnurl, story['story_permalink'],))
+        for story in storylist:
+            if story['story_feed_id'] == constants.NB_HN_FEED_ID:
+                hnurl = get_hn_url(story['story_content'])
+                # thehash = str(story['story_hash'])
+                # date = str(story['story_date'])
+                # link = str(story['story_permalink'])
+                # print "%s; %s; %s; %s " % (thehash, date, hnurl, link,)
+                # cursor.execute('''REPLACE INTO stories (hash, added, hnurl, url) VALUES (%s, %s, %s, %s)''', (thehash, date, hnurl, link,))
+                cursor.execute(INSERT_HASH_QUERY, (story['story_hash'], story['story_date'], hnurl, story['story_permalink'],))
+    except ValueError as e:
+        print 'Failed to get stories for request ' + req_str
+        print e
+
                            
 
 # read through DB for rows without comment count, then add it
 def add_comment_counts():
     print 'Add comment counts to stories in DB'
-    conn = sqlite3.connect(constants.DATABASE_FILENAME)
+    conn = MySQLdb.connect (host = constants.DB_HOST,
+                            user = constants.DB_USER,
+                            passwd = constants.DB_PASS,
+                            db = constants.DB_NAME)
     cursor = conn.cursor()
 
     cursor.execute("SELECT hnurl FROM stories WHERE comments IS NULL")
@@ -77,7 +96,7 @@ def add_comment_counts():
         url = row[0]
         count = get_comment_count(url)
         if count is not None:
-            cursor.execute("UPDATE stories SET comments = ? WHERE hnurl = ?", (count, url))
+            cursor.execute("UPDATE stories SET comments = %s WHERE hnurl = %s", (count, url))
             conn.commit()
     conn.close()
     print 'Finished adding comment counts'
