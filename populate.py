@@ -127,7 +127,7 @@ def get_with_backoff(url, on_success):
         while resp.status_code != 200:
             if resp.status_code in [403, 500, 503]:  # exponential backoff
                 logger.debug("Request for {0} returned {1} response".format(url, resp.status_code))
-                if backoff < constants.MAX_BACKOFF:
+                if backoff < constants.BACKOFF_MAX:
                     logger.debug("Backing off {0} seconds".format(backoff))
                     sleep(backoff)
                     resp = requests.get(url, verify=constants.VERIFY)
@@ -136,7 +136,8 @@ def get_with_backoff(url, on_success):
                     logger.debug("Giving up after {0} seconds for {1}".format(backoff, url))
                     return None
             elif resp.status_code == 520:
-                logger.debug("520 response, skipping {0}".format(url))
+                logger.debug("520 response, skipping {0} and waiting {1} sec".format(url, constants.BACKOFF_ON_520))
+                sleep(constants.BACKOFF_ON_520)
                 return None
             else:
                 logger.debug("Request for {0} returned unhandled {1} response".format(url, resp.status_code))
