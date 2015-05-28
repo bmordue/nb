@@ -173,7 +173,7 @@ def get_comment_count(hnurl):
                 logger.debug("Request for {0} returned unhandled {1} response".format(hnurl, story.status_code))
                 raise requests.exceptions.RequestException()
     except requests.exceptions.RequestException as e:
-        logger.error("hnurl: {0}".format(hnurl)
+        logger.error("hnurl: {0}".format(hnurl))
         logger.error(e)
         return None
     return parse_story(story.text)
