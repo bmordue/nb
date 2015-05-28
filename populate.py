@@ -166,9 +166,10 @@ def get_comment_count(hnurl):
                 else:
                     logger.debug("Giving up after {0} seconds for {1}".format(backoff, hnurl))
                     return None
-            elif resp.status_code == 520:
-                logger.debug("520 response, skipping {0} and waiting {1} sec".format(url, constants.BACKOFF_ON_520))
+            elif story.status_code == 520:
+                logger.debug("520 response, skipping {0} and waiting {1} sec".format(hnurl, constants.BACKOFF_ON_520))
                 sleep(constants.BACKOFF_ON_520)
+                return None
             else:
                 logger.debug("Request for {0} returned unhandled {1} response".format(hnurl, story.status_code))
                 raise requests.exceptions.RequestException()
