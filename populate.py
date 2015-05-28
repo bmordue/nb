@@ -98,6 +98,7 @@ def add_comment_counts():
     for row in rows:
         url = row[0]
         count = get_comment_count(url)
+        logger.debug("Count for {0} is {1}".format(url, count))
         if count is not None:
             cursor.execute("UPDATE stories SET comments = %s WHERE hnurl = %s", (count, url))
             conn.commit()
