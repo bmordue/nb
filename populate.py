@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup
 from time import sleep
 import MySQLdb
 
-INSERT_HASH_QUERY='''REPLACE INTO stories (hash, added, hnurl, url) VALUES (%s, %s, %s, %s)'''
+INSERT_HASH_QUERY='''INSERT IGNORE INTO stories (hash, added, hnurl, url) VALUES (%s, %s, %s, %s)'''
 
 TABLE_SETUP_QUERY='''CREATE TABLE IF NOT EXISTS stories
              (hash VARCHAR(64) UNIQUE, hnurl TEXT, url TEXT, added TEXT, comments INTEGER,
@@ -166,10 +166,9 @@ def get_comment_count(hnurl):
                 else:
                     logger.debug("Giving up after {0} seconds for {1}".format(backoff, hnurl))
                     return None
-            elif story.status_code == 520:
-                logger.debug("520 response, skipping {0} and waiting {1} sec".format(hnurl, constants.BACKOFF_ON_520))
+            elif resp.status_code == 520:
+                logger.debug("520 response, skipping {0} and waiting {1} sec".format(url, constants.BACKOFF_ON_520))
                 sleep(constants.BACKOFF_ON_520)
-                return None
             else:
                 logger.debug("Request for {0} returned unhandled {1} response".format(hnurl, story.status_code))
                 raise requests.exceptions.RequestException()
