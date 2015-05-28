@@ -81,6 +81,7 @@ def process_batch(cookie_store, cursor, batch):
     except ValueError as e:
         logger.error('Failed to get stories for request {0}'.format(req_str))
         logger.error(e)
+        logger.debug(stories.text)
 
                            
 
@@ -159,6 +160,7 @@ def get_comment_count(hnurl):
         while story.status_code != 200:
             if story.status_code in [403, 500, 503]:  # exponential backoff
                 logger.debug("Request for {0} returned {1} response".format(hnurl, story.status_code))
+                logger.debug("{0}".format(story))
                 if backoff < constants.BACKOFF_MAX:
                     logger.debug("Backing off {0} seconds".format(backoff))
                     sleep(backoff)
