@@ -158,7 +158,7 @@ def get_comment_count(hnurl):
         while story.status_code != 200:
             if story.status_code in [403, 500, 503]:  # exponential backoff
                 logger.debug("Request for {0} returned {1} response".format(hnurl, story.status_code))
-                if backoff < constants.MAX_BACKOFF:
+                if backoff < constants.BACKOFF_MAX:
                     logger.debug("Backing off {0} seconds".format(backoff))
                     sleep(backoff)
                     backoff *= constants.BACKOFF_FACTOR
