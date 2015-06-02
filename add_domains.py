@@ -15,7 +15,8 @@ import MySQLdb
 
 def add_domains():
     CREATE_TABLE_QUERY='''CREATE TABLE IF NOT EXISTS domains
-                 (id INTEGER UNIQUE NOT NULL AUTO_INCREMENT, nb_hash VARCHAR(64), domain TEXT UNIQUE, PRIMARY KEY (id), FOREIGN KEY nb_hash REFERENCES stories(hash))'''
+                 (id INTEGER UNIQUE NOT NULL AUTO_INCREMENT, nb_hash VARCHAR(64), domain VARCHAR(128) UNIQUE, PRIMARY KEY (id), toplevel VARCHAR(128),
+                   FOREIGN KEY (nb_hash) REFERENCES stories (hash) )'''
     
     conn = MySQLdb.connect (host = constants.DB_HOST,
                             user = constants.DB_USER,
@@ -24,15 +25,16 @@ def add_domains():
     cursor = conn.cursor()
     cursor.execute(CREATE_TABLE_QUERY)
 
-    cursor.execute("SELECT hash, url FROM stories", (constants.COMMENTS_THRESHOLD,))
+    cursor.execute("SELECT hash, url FROM stories")
     rows = cursor.fetchall()
     logger.debug('Found {0} results.'.format(len(rows)))
 
     for row in rows:
         domain = row[1].split('/')[2]
+	toplevel = '.'.join(domain.split('.')[-2:])
         nb_hash = row[0]
         logger.debug('Domain is {0}'.format(domain))
-        cursor.execute('''INSERT IGNORE INTO domains (nb_hash, domain) VALUES (%s, %s)''', (nb_hash, domain,))
+        cursor.execute('''INSERT IGNORE INTO domains (nb_hash, domain, toplevel) VALUES (%s, %s, %s)''', (nb_hash, domain, toplevel,))
         conn.commit()
             # count += 1
     # conn.commit()
