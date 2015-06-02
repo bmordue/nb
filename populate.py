@@ -81,6 +81,7 @@ def process_batch(cookie_store, cursor, batch):
     except ValueError as e:
         logger.error('Failed to get stories for request {0}'.format(req_str))
         logger.error(e)
+        logger.debug(stories.text)
 
                            
 
@@ -98,6 +99,7 @@ def add_comment_counts():
     for row in rows:
         url = row[0]
         count = get_comment_count(url)
+        logger.debug("Count for {0} is {1}".format(url, count))
         if count is not None:
             cursor.execute("UPDATE stories SET comments = %s WHERE hnurl = %s", (count, url))
             conn.commit()
@@ -158,6 +160,7 @@ def get_comment_count(hnurl):
         while story.status_code != 200:
             if story.status_code in [403, 500, 503]:  # exponential backoff
                 logger.debug("Request for {0} returned {1} response".format(hnurl, story.status_code))
+                logger.debug("{0}".format(story))
                 if backoff < constants.BACKOFF_MAX:
                     logger.debug("Backing off {0} seconds".format(backoff))
                     sleep(backoff)
@@ -167,7 +170,7 @@ def get_comment_count(hnurl):
                     logger.debug("Giving up after {0} seconds for {1}".format(backoff, hnurl))
                     return None
             elif story.status_code == 520:
-                logger.debug("520 response, skipping {0} and waiting {1} sec".format(hnurl, constants.BACKOFF_ON_520))
+                logger.debug("520 response for {0}; waiting {1} sec".format(hnurl, constants.BACKOFF_ON_520))
                 sleep(constants.BACKOFF_ON_520)
                 return None
             else:
