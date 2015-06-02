@@ -15,7 +15,7 @@ import MySQLdb
 
 def add_domains():
     CREATE_TABLE_QUERY='''CREATE TABLE IF NOT EXISTS domains
-                 (id INTEGER UNIQUE NOT NULL AUTO_INCREMENT, nb_hash VARCHAR(64), domain VARCHAR(128) UNIQUE, PRIMARY KEY (id), toplevel VARCHAR(128),
+                 (id INTEGER UNIQUE NOT NULL AUTO_INCREMENT, nb_hash VARCHAR(64) UNIQUE, domain VARCHAR(128), PRIMARY KEY (id), toplevel VARCHAR(128),
                    FOREIGN KEY (nb_hash) REFERENCES stories (hash) )'''
     
     conn = MySQLdb.connect (host = constants.DB_HOST,
