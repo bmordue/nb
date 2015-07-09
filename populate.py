@@ -83,8 +83,8 @@ def process_batch(cookie_store, cursor, batch):
                 # print "%s; %s; %s; %s " % (thehash, date, hnurl, link,)
                 # cursor.execute('''REPLACE INTO stories (hash, added, hnurl, url) VALUES (%s, %s, %s, %s)''', (thehash, date, hnurl, link,))
                 cursor.execute(INSERT_HASH_QUERY, (story['story_hash'], story['story_date'], hnurl, story['story_permalink'],))
-            else:
-                logger.debug('Ignoring {0}'.format(story['story_permalink']))
+#            else:
+#                logger.debug('Ignoring {0}'.format(story['story_permalink']))
     except ValueError as e:
         logger.error('Failed to get stories for request {0}'.format(req_str))
         logger.error(e)
