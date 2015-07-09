@@ -39,6 +39,7 @@ def populate():
     logger.info('Size of hashlist is ' + str(len(hashlist)))
 
     i = 0
+    count_batches = 0
     batch = []
     batchcounter = 0
     for ahash in hashlist:
@@ -48,19 +49,23 @@ def populate():
             break
         if batchcounter > constants.BATCH_SIZE:
             process_batch(mycookies, c, batch)
+            count_batches += 1
             conn.commit()
             batchcounter = 0
             batch = []
         batchcounter += 1
         batch.append(ahash)
     process_batch(mycookies, c, batch)
+    count_batches += 1
     conn.commit()
     conn.close()
-    logger.info('Finished adding story hashes to DB')
+    logger.info('Finished adding story hashes to DB.')
+    logger.info('Added {0} hashes in {1} batches.'.format(i, count_batches))
 
 
 # Print 'Process a batch of hashes and add details to DB'
 def process_batch(cookie_store, cursor, batch):
+    logger.debug('process_batch()')
     req_str = constants.NB_ENDPOINT + '/reader/starred_stories?'
 
     for a_hash in batch:
@@ -160,7 +165,7 @@ def get_comment_count(hnurl):
         while story.status_code != 200:
             if story.status_code in [403, 500, 503]:  # exponential backoff
                 logger.debug("Request for {0} returned {1} response".format(hnurl, story.status_code))
-                logger.debug("{0}".format(story))
+#                logger.debug("{0}".format(story.text))
                 if backoff < constants.BACKOFF_MAX:
                     logger.debug("Backing off {0} seconds".format(backoff))
                     sleep(backoff)
