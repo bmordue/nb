@@ -16,6 +16,7 @@ import MySQLdb
 def add_domains():
     CREATE_TABLE_QUERY='''CREATE TABLE IF NOT EXISTS domains
                  (id INTEGER UNIQUE NOT NULL AUTO_INCREMENT, nb_hash VARCHAR(64) UNIQUE, domain VARCHAR(128), PRIMARY KEY (id), toplevel VARCHAR(128),
+                 toplevel_new VARCHAR(128),
                    FOREIGN KEY (nb_hash) REFERENCES stories (hash) )'''
     
     conn = MySQLdb.connect (host = constants.DB_HOST,
@@ -31,11 +32,15 @@ def add_domains():
 
     for row in rows:
         domain = row[1].split('/')[2]
-	toplevel = '.'.join(domain.split('.')[-2:])
+    	toplevel = '.'.join(domain.split('.')[-2:])
+    	if domain.split('.').len > 2:
+    	    toplevel_new = '.'.join(domain.split('.')[1:])
         nb_hash = row[0]
         logger.debug('Domain is {0}'.format(domain))
-        cursor.execute('''INSERT IGNORE INTO domains (nb_hash, domain, toplevel) VALUES (%s, %s, %s)''', (nb_hash, domain, toplevel,))
-        conn.commit()
+        if toplevel != toplevel_new:
+            logger.debug('toplevel: {0}; toplevel_new" {1}'.format(toplevel, toplevel_new))
+        cursor.execute('''INSERT IGNORE INTO domains (nb_hash, domain, toplevel, toplevel_new) VALUES (%s, %s, %s, %s)''', (nb_hash, domain, toplevel,toplevel_new))
+    conn.commit()
             # count += 1
     # conn.commit()
     conn.close()
