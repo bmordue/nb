@@ -40,7 +40,7 @@ def add_domains():
         nb_hash = row[0]
         logger.debug('Domain is {0}'.format(domain))
         if toplevel != toplevel_new:
-            logger.info('toplevel: {0}; toplevel_new" {1}'.format(toplevel, toplevel_new))
+            logger.info('toplevel: {0}; toplevel_new: {1}'.format(toplevel, toplevel_new))
         cursor.execute('''INSERT IGNORE INTO domains (nb_hash, domain, toplevel, toplevel_new) VALUES (%s, %s, %s, %s)''', (nb_hash, domain, toplevel,toplevel_new))
     conn.commit()
             # count += 1
