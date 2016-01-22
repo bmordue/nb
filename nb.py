@@ -8,6 +8,7 @@ import nb_logging
 # # import sqlite3
 # from bs4 import BeautifulSoup
 # from time import sleep
+from add_domains import add_domains
 
 from populate import populate
 from populate import add_comment_counts
@@ -23,7 +24,8 @@ if __name__ == "__main__":
     
     logger = nb_logging.setup_logger('NB')
     
-    populate()
-    add_comment_counts()
-    prune_starred()
+#    populate()
+#    add_comment_counts()
+#    prune_starred()
+    add_domains()
     logger.info('Done.')
