@@ -16,7 +16,7 @@ INSERT_HASH_QUERY='''INSERT IGNORE INTO stories (hash, added, hnurl, url) VALUES
 
 TABLE_SETUP_QUERY='''CREATE TABLE IF NOT EXISTS stories
              (hash VARCHAR(64) UNIQUE, hnurl TEXT, url TEXT, added TEXT, comments INTEGER,
-             starred BOOLEAN DEFAULT 1)'''
+             starred BOOLEAN DEFAULT 1) CHARACTER SET utf8'''
 
 def populate():
     logger.info('Set up DB and add a row for each HN story')
