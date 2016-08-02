@@ -7,7 +7,6 @@ logger = logging.getLogger('NB')
 import requests
 import requests.exceptions
 import json
-# import sqlite3
 from bs4 import BeautifulSoup
 from time import sleep
 import MySQLdb
@@ -63,9 +62,8 @@ def populate():
     logger.info('Processed {0} hashes in {1} batches.'.format(i, count_batches))
 
 
-# Print 'Process a batch of hashes and add details to DB'
+# Process a batch of hashes and add details to DB
 def process_batch(cookie_store, cursor, batch):
-#    logger.debug('process_batch()')
     req_str = constants.NB_ENDPOINT + '/reader/starred_stories?'
 
     for a_hash in batch:
@@ -77,14 +75,7 @@ def process_batch(cookie_store, cursor, batch):
         for story in storylist:
             if story['story_feed_id'] == constants.NB_HN_FEED_ID:
                 hnurl = get_hn_url(story['story_content'])
-                # thehash = str(story['story_hash'])
-                # date = str(story['story_date'])
-                # link = str(story['story_permalink'])
-                # print "%s; %s; %s; %s " % (thehash, date, hnurl, link,)
-                # cursor.execute('''REPLACE INTO stories (hash, added, hnurl, url) VALUES (%s, %s, %s, %s)''', (thehash, date, hnurl, link,))
                 cursor.execute(INSERT_HASH_QUERY, (story['story_hash'], story['story_date'], hnurl, story['story_permalink'],))
-#            else:
-#                logger.debug('Ignoring {0}'.format(story['story_permalink']))
     except ValueError as e:
         logger.error('Failed to get stories for request {0}'.format(req_str))
         logger.error(e)
@@ -92,9 +83,6 @@ def process_batch(cookie_store, cursor, batch):
     except MySQLdb.connector.Error as err:
         logger.error('MySQL error')
         logger.error(err)
-#        logger.debug(stories.text)
-
-                           
 
 # read through DB for rows without comment count, then add it
 def add_comment_counts():
