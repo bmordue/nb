@@ -10,6 +10,7 @@ import json
 from bs4 import BeautifulSoup
 from time import sleep
 import MySQLdb
+import warnings
 
 INSERT_HASH_QUERY='''INSERT IGNORE INTO stories (hash, added, hnurl, url) VALUES (%s, %s, %s, %s)'''
 
@@ -25,7 +26,9 @@ def populate():
                             db = constants.DB_NAME)
     c = conn.cursor()
 
-    c.execute(TABLE_SETUP_QUERY)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        c.execute(TABLE_SETUP_QUERY)
 
     r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS, verify=constants.VERIFY)
     mycookies = r.cookies
