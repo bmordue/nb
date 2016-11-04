@@ -12,12 +12,16 @@ from time import sleep
 import MySQLdb
 import warnings
 
+# import statsd
+from statsd import StatsdTimer
+
 INSERT_HASH_QUERY='''INSERT IGNORE INTO stories (hash, added, hnurl, url) VALUES (%s, %s, %s, %s)'''
 
 TABLE_SETUP_QUERY='''CREATE TABLE IF NOT EXISTS stories
              (hash VARCHAR(64) UNIQUE, hnurl TEXT, url TEXT, added TEXT, comments INTEGER,
              starred BOOLEAN DEFAULT 1) CHARACTER SET utf8'''
 
+@StatsdTimer.wrap('nb.populate.populate')
 def populate():
     logger.info('Set up DB and add a row for each HN story')
     conn = MySQLdb.connect (host = constants.DB_HOST,
@@ -31,11 +35,12 @@ def populate():
         c.execute(TABLE_SETUP_QUERY)
 
     r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS, verify=constants.VERIFY)
+    statsd.incr('nb.http_requests.post')
     mycookies = r.cookies
 
     hashes = requests.get(constants.NB_ENDPOINT + '/reader/starred_story_hashes',
                           cookies=mycookies, verify=constants.VERIFY)
-
+    statsd.incr('nb.http_requests.get')
     hashlist = hashes.json()['starred_story_hashes']
 
     logger.info('Size of hashlist is ' + str(len(hashlist)))
@@ -66,12 +71,14 @@ def populate():
 
 
 # Process a batch of hashes and add details to DB
+@StatsdTimer.wrap('nb.populate.process_batch')
 def process_batch(cookie_store, cursor, batch):
     req_str = constants.NB_ENDPOINT + '/reader/starred_stories?'
 
     for a_hash in batch:
         req_str += 'h=' + a_hash + '&'
     stories = requests.get(req_str, cookies=cookie_store, verify=constants.VERIFY)
+    statsd.incr('nb.http_requests.get')
     try:
         storylist = json.loads(stories.text)['stories']
 
@@ -88,6 +95,7 @@ def process_batch(cookie_store, cursor, batch):
         logger.error(err)
 
 # read through DB for rows without comment count, then add it
+@StatsdTimer.wrap('nb.populate.add_comment_counts')
 def add_comment_counts():
     logger.info('Add comment counts to stories in DB')
     conn = MySQLdb.connect (host = constants.DB_HOST,
@@ -114,6 +122,7 @@ def get_hn_url(content):
 
 
 # Parse HN story to find how many comments there are
+@StatsdTimer.wrap('nb.populate.parse_story')
 def parse_story(content):
     soup = BeautifulSoup(content)
     comment_count = len(soup.find_all("span", {"class": "comment"}))
@@ -124,10 +133,12 @@ def parse_story(content):
 # eg request_with_backoff(hnurl, parse_story)
 # Hmm. Falls down on POSTs. :-( Needs more treatment
 # TODO: cf requests PreparedRequest!
+@StatsdTimer.wrap('nb.populate.get_with_backoff')
 def get_with_backoff(url, on_success):
     try:
         backoff = constants.BACKOFF_START
         resp = requests.get(url, verify=constants.VERIFY)
+        statsd.incr('nb.http_requests.get')
         while resp.status_code != 200:
             if resp.status_code in [403, 500, 503]:  # exponential backoff
                 logger.debug("Request for {0} returned {1} response".format(url, resp.status_code))
@@ -135,6 +146,7 @@ def get_with_backoff(url, on_success):
                     logger.debug("Backing off {0} seconds".format(backoff))
                     sleep(backoff)
                     resp = requests.get(url, verify=constants.VERIFY)
+                    statsd.incr('nb.http_requests.get')
                     backoff = backoff * constants.BACKOFF_FACTOR
                 else:
                     logger.debug("Giving up after {0} seconds for {1}".format(backoff, url))
@@ -155,10 +167,12 @@ def get_with_backoff(url, on_success):
 
 
 # TODO: DEPRECATE in favour of request_with_backoff()
+@StatsdTimer.wrap('nb.populate.get_comment_count')
 def get_comment_count(hnurl):
     try:
         backoff = 5
         story = requests.get(hnurl, verify=constants.VERIFY)
+        statsd.incr('nb.http_requests.get')
         while story.status_code != 200:
             if story.status_code in [403, 500, 503]:  # exponential backoff
                 logger.debug("Request for {0} returned {1} response".format(hnurl, story.status_code))
@@ -168,6 +182,7 @@ def get_comment_count(hnurl):
                     sleep(backoff)
                     backoff *= constants.BACKOFF_FACTOR
                     story = requests.get(hnurl, verify=constants.VERIFY)
+                    statsd.incr('nb.http_requests.get')
                 else:
                     logger.debug("Giving up after {0} seconds for {1}".format(backoff, hnurl))
                     return None

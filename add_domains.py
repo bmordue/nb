@@ -11,8 +11,9 @@ logger = logging.getLogger('NB')
 # from bs4 import BeautifulSoup
 # from time import sleep
 import MySQLdb
+from statsd import StatsdTimer
 
-
+@StatsdTimer.wrap('nb.add_domains.add_domains')
 def add_domains():
     CREATE_TABLE_QUERY='''CREATE TABLE IF NOT EXISTS domains
                  (id INTEGER UNIQUE NOT NULL AUTO_INCREMENT, nb_hash VARCHAR(64) UNIQUE, domain VARCHAR(128), PRIMARY KEY (id), toplevel VARCHAR(128), toplevel_new VARCHAR(128),
