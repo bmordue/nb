@@ -27,7 +27,7 @@ def remove_star_with_backoff(story_hash, mycookies):
         while resp.status_code != 200:
             if resp.status_code in [403, 500, 503]:  # exponential backoff
                 print "Request for %s returned %s response" % (unstar_url, resp.status_code)
-                if backoff < constants.MAX_BACKOFF:
+                if backoff < constants.BACKOFF_MAX:
                     print "Backing off %s seconds" % backoff
                     sleep(backoff)
                     backoff = backoff * constants.BACKOFF_FACTOR
