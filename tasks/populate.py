@@ -1,40 +1,28 @@
-__author__ = 'bmordue'
-
-import constants
-import logging
-logger = logging.getLogger('NB')
+import json
+from time import sleep
 
 import requests
 import requests.exceptions
-import json
-from bs4 import BeautifulSoup
-from time import sleep
-import MySQLdb
-import warnings
-
 import statsd
+from bs4 import BeautifulSoup
 from statsd import StatsdTimer
 
-INSERT_HASH_QUERY='''INSERT IGNORE INTO stories (hash, added, hnurl, url) VALUES (%s, %s, %s, %s)'''
+from utility import constants, client_factory
+from utility import nb_logging
 
-TABLE_SETUP_QUERY='''CREATE TABLE IF NOT EXISTS stories
-             (hash VARCHAR(64) UNIQUE, hnurl TEXT, url TEXT, added TEXT, comments INTEGER,
-             starred BOOLEAN DEFAULT 1) CHARACTER SET utf8'''
+logger = nb_logging.setup_logger('populate')
+
 
 @StatsdTimer.wrap('nb.populate.populate')
 def populate():
     logger.info('Set up DB and add a row for each HN story')
-    conn = MySQLdb.connect (host = constants.DB_HOST,
-                            user = constants.DB_USER,
-                            passwd = constants.DB_PASS,
-                            db = constants.DB_NAME)
-    c = conn.cursor()
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        c.execute(TABLE_SETUP_QUERY)
+    db_client = client_factory.get_db_client()
+    db_client.ensure_stories_table_exists()
+    db_client.close_connection()
 
-    r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS, verify=constants.VERIFY)
+    r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS,
+                      verify=constants.VERIFY)
     statsd.increment('nb.http_requests.post')
     mycookies = r.cookies
 
@@ -55,25 +43,24 @@ def populate():
             logger.info('Reached MAX_PARSE ({0})'.format(constants.MAX_PARSE))
             break
         if batchcounter > constants.BATCH_SIZE:
-            process_batch(mycookies, c, batch)
+            process_batch(mycookies, batch)
             count_batches += 1
-            conn.commit()
             batchcounter = 0
             batch = []
         batchcounter += 1
         batch.append(ahash)
-    process_batch(mycookies, c, batch)
+    process_batch(mycookies, batch)
     count_batches += 1
-    conn.commit()
-    conn.close()
     logger.info('Finished adding story hashes to DB.')
     logger.info('Processed {0} hashes in {1} batches.'.format(i, count_batches))
 
 
 # Process a batch of hashes and add details to DB
 @StatsdTimer.wrap('nb.populate.process_batch')
-def process_batch(cookie_store, cursor, batch):
+def process_batch(cookie_store, batch):
     req_str = constants.NB_ENDPOINT + '/reader/starred_stories?'
+
+    db_client = client_factory.get_db_client()
 
     for a_hash in batch:
         req_str += 'h=' + a_hash + '&'
@@ -85,35 +72,28 @@ def process_batch(cookie_store, cursor, batch):
         for story in storylist:
             if story['story_feed_id'] == constants.NB_HN_FEED_ID:
                 hnurl = get_hn_url(story['story_content'])
-                cursor.execute(INSERT_HASH_QUERY, (story['story_hash'], story['story_date'], hnurl, story['story_permalink'],))
+                db_client.add_story(story['story_hash'], story['story_date'], hnurl,
+                                    story['story_permalink'])
     except ValueError as e:
         logger.error('Failed to get stories for request {0}'.format(req_str))
         logger.error(e)
         logger.debug(stories.text)
-    except MySQLdb.connector.Error as err:
-        logger.error('MySQL error')
-        logger.error(err)
+
+    db_client.close_connection()
+
 
 # read through DB for rows without comment count, then add it
 @StatsdTimer.wrap('nb.populate.add_comment_counts')
 def add_comment_counts():
     logger.info('Add comment counts to stories in DB')
-    conn = MySQLdb.connect (host = constants.DB_HOST,
-                            user = constants.DB_USER,
-                            passwd = constants.DB_PASS,
-                            db = constants.DB_NAME)
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT hnurl FROM stories WHERE comments IS NULL")
-    rows = cursor.fetchall()
+    db_client = client_factory.get_db_client()
+    rows = db_client.list_stories_without_comment_count()
     for row in rows:
         url = row[0]
         count = get_comment_count(url)
         logger.debug("Count for {0} is {1}".format(url, count))
         if count is not None:
-            cursor.execute("UPDATE stories SET comments = %s WHERE hnurl = %s", (count, url))
-            conn.commit()
-    conn.close()
+            db_client.add_comment_count(url, count)
     logger.info('Finished adding comment counts')
 
 
@@ -152,11 +132,13 @@ def get_with_backoff(url, on_success):
                     logger.debug("Giving up after {0} seconds for {1}".format(backoff, url))
                     return None
             elif resp.status_code == 520:
-                logger.debug("520 response, skipping {0} and waiting {1} sec".format(url, constants.BACKOFF_ON_520))
+                logger.debug("520 response, skipping {0} and waiting {1} sec"
+                             .format(url, constants.BACKOFF_ON_520))
                 sleep(constants.BACKOFF_ON_520)
                 return None
             else:
-                logger.debug("Request for {0} returned unhandled {1} response".format(url, resp.status_code))
+                logger.debug(
+                    "Request for {0} returned unhandled {1} response".format(url, resp.status_code))
                 raise requests.exceptions.RequestException()
     except requests.exceptions.RequestException as e:
         logger.error("url is: {0}".format(url))
@@ -175,8 +157,9 @@ def get_comment_count(hnurl):
         statsd.increment('nb.http_requests.get')
         while story.status_code != 200:
             if story.status_code in [403, 500, 503]:  # exponential backoff
-                logger.debug("Request for {0} returned {1} response".format(hnurl, story.status_code))
-#                logger.debug("{0}".format(story.text))
+                logger.debug(
+                    "Request for {0} returned {1} response".format(hnurl, story.status_code))
+                #                logger.debug("{0}".format(story.text))
                 if backoff < constants.BACKOFF_MAX:
                     logger.debug("Backing off {0} seconds".format(backoff))
                     sleep(backoff)
@@ -187,16 +170,16 @@ def get_comment_count(hnurl):
                     logger.debug("Giving up after {0} seconds for {1}".format(backoff, hnurl))
                     return None
             elif story.status_code == 520:
-                logger.debug("520 response for {0}; waiting {1} sec".format(hnurl, constants.BACKOFF_ON_520))
+                logger.debug(
+                    "520 response for {0}; waiting {1} sec".format(hnurl, constants.BACKOFF_ON_520))
                 sleep(constants.BACKOFF_ON_520)
                 return None
             else:
-                logger.debug("Request for {0} returned unhandled {1} response".format(hnurl, story.status_code))
+                logger.debug("Request for {0} returned unhandled {1} response"
+                             .format(hnurl, story.status_code))
                 raise requests.exceptions.RequestException()
     except requests.exceptions.RequestException as e:
         logger.error("hnurl: {0}".format(hnurl))
         logger.error(e)
         return None
     return parse_story(story.text)
-
-
