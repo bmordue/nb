@@ -58,6 +58,7 @@ def populate():
 # Process a batch of hashes and add details to DB
 @StatsdTimer.wrap('nb.populate.process_batch')
 def process_batch(cookie_store, batch):
+    # logger.debug("Processing batch: {0}".format(batch))
     req_str = constants.NB_ENDPOINT + '/reader/starred_stories?'
 
     db_client = client_factory.get_db_client()
@@ -68,6 +69,7 @@ def process_batch(cookie_store, batch):
     statsd.increment('nb.http_requests.get')
     try:
         storylist = json.loads(stories.text)['stories']
+        # logger.debug("Story list: {0}".format(storylist))
 
         for story in storylist:
             if story['story_feed_id'] == constants.NB_HN_FEED_ID:
@@ -89,7 +91,7 @@ def add_comment_counts():
     db_client = client_factory.get_db_client()
     rows = db_client.list_stories_without_comment_count()
     for row in rows:
-        url = row[0]
+        url = row.hnurl
         count = get_comment_count(url)
         logger.debug("Count for {0} is {1}".format(url, count))
         if count is not None:
@@ -105,7 +107,7 @@ def get_hn_url(content):
 @StatsdTimer.wrap('nb.populate.parse_story')
 def parse_story(content):
     soup = BeautifulSoup(content)
-    comment_count = len(soup.find_all("span", {"class": "comment"}))
+    comment_count = len(soup.find_all("div", {"class": "comment"}))
     return comment_count
 
 
@@ -115,11 +117,13 @@ def parse_story(content):
 # TODO: cf requests PreparedRequest!
 @StatsdTimer.wrap('nb.populate.get_with_backoff')
 def get_with_backoff(url, on_success):
+    db_client = client_factory.get_db_client()
     try:
         backoff = constants.BACKOFF_START
         resp = requests.get(url, verify=constants.VERIFY)
         statsd.increment('nb.http_requests.get')
         while resp.status_code != 200:
+            db_client.record_error(url, resp.status_code, resp.headers, resp.text)
             if resp.status_code in [403, 500, 503]:  # exponential backoff
                 logger.debug("Request for {0} returned {1} response".format(url, resp.status_code))
                 if backoff < constants.BACKOFF_MAX:
@@ -132,8 +136,10 @@ def get_with_backoff(url, on_success):
                     logger.debug("Giving up after {0} seconds for {1}".format(backoff, url))
                     return None
             elif resp.status_code == 520:
-                logger.debug("520 response, skipping {0} and waiting {1} sec"
+                logger.info("520 response, skipping {0} and waiting {1} sec"
                              .format(url, constants.BACKOFF_ON_520))
+                logger.debug("Response headers: {0}".format(resp.headers))
+                logger.debug("Response body: {0}".format(resp.text))
                 sleep(constants.BACKOFF_ON_520)
                 return None
             else:
@@ -151,15 +157,19 @@ def get_with_backoff(url, on_success):
 # TODO: DEPRECATE in favour of request_with_backoff()
 @StatsdTimer.wrap('nb.populate.get_comment_count')
 def get_comment_count(hnurl):
+    db_client = client_factory.get_db_client()
+    db_client.ensure_stories_table_exists()
     try:
         backoff = 5
         story = requests.get(hnurl, verify=constants.VERIFY)
         statsd.increment('nb.http_requests.get')
         while story.status_code != 200:
-            if story.status_code in [403, 500, 503]:  # exponential backoff
+            db_client.record_error(hnurl, story.status_code, story.headers, story.text)
+            if story.status_code in [403, 429, 500, 503]:  # exponential backoff
                 logger.debug(
                     "Request for {0} returned {1} response".format(hnurl, story.status_code))
-                #                logger.debug("{0}".format(story.text))
+                logger.debug("{0}".format(story.text))
+                logger.debug("{0}".format(story.headers))
                 if backoff < constants.BACKOFF_MAX:
                     logger.debug("Backing off {0} seconds".format(backoff))
                     sleep(backoff)
@@ -169,9 +179,11 @@ def get_comment_count(hnurl):
                 else:
                     logger.debug("Giving up after {0} seconds for {1}".format(backoff, hnurl))
                     return None
-            elif story.status_code == 520:
+            elif story.status_code in [520]:
                 logger.debug(
                     "520 response for {0}; waiting {1} sec".format(hnurl, constants.BACKOFF_ON_520))
+                logger.debug("Response headers: {0}".format(story.headers))
+                logger.debug("Response body: {0}".format(story.text))
                 sleep(constants.BACKOFF_ON_520)
                 return None
             else:

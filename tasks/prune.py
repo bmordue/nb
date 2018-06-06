@@ -61,12 +61,14 @@ def prune_starred():
     db_client = client_factory.get_db_client()
     rows = db_client.list_stories_with_comments_fewer_than(constants.COMMENTS_THRESHOLD)
 
-    count = 0
+    removed = 0
+    candidates = 0
     for row in rows:
+        candidates += 1
         if remove_star_with_backoff(row[0], mycookies):
             db_client.unstar(row[0])
-            count += 1
-    logger.info('Removed {0} out of {1} candidate stars'.format(count, len(rows)))
+            removed += 1
+    logger.info('Successfully removed {0} out of {1} candidate stars'.format(removed, candidates))
     db_client.close_connection()
     logger.info('Finished pruning stars')
 
