@@ -11,7 +11,7 @@ class DbConnector:
 
     def ensure_stories_table_exists(self): raise NotImplementedError
 
-    def insert_domain_entry(self, nb_hash, nb_url): raise NotImplementedError
+    def insert_domain_entry(self, nb_hash, nb_url, domain, toplevel, toplevel_new): raise NotImplementedError
 
     def list_stories_with_comments_fewer_than(self, threshold): raise NotImplementedError
 
@@ -20,3 +20,5 @@ class DbConnector:
     def list_urls(self): raise NotImplementedError
 
     def unstar(self, nb_hash): raise NotImplementedError
+    
+    def record_error(self, url, code): raise NotImplementedError
