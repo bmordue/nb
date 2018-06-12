@@ -11,5 +11,6 @@ class ErrorModel(Model):
         write_capacity_units = 1
     url = UnicodeAttribute(hash_key=True)
     status_code = NumberAttribute()
-    headers = UnicodeAttribute()
-    body = UnicodeAttribute()
+    headers = UnicodeAttribute(null=True)
+    body = UnicodeAttribute(null=True)
+    ttl = NumberAttribute()

@@ -10,8 +10,8 @@ class DomainModel(Model):
         read_capacity_units = 1
         write_capacity_units = 1
     nb_hash = UnicodeAttribute(hash_key=True)
-    domain = UnicodeAttribute
+    domain = UnicodeAttribute()
     nb_url = UnicodeAttribute()
-    toplevel = UnicodeAttribute
-    toplevel_new = UnicodeAttribute
+    toplevel = UnicodeAttribute()
+    toplevel_new = UnicodeAttribute()
 

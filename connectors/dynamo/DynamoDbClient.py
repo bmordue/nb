@@ -60,7 +60,10 @@ class DynamoDbClient(DbConnector):
                 StoryModel.starred.set(False)
             ]
         )
-        
-    def record_error(self, url, code, headers=None, body=None):
-        error = ErrorModel(url, status_code=code, headers=headers, body=body)
+
+    def get_expiry_time():
+        return int(time.time()) + 24*60*60
+
+    def record_error(self, url, code, headers, body):
+        error = ErrorModel(url, status_code=code, headers=headers, body=body, ttl=get_expiry_time())
         error.save()

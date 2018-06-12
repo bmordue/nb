@@ -123,7 +123,7 @@ def get_with_backoff(url, on_success):
         resp = requests.get(url, verify=constants.VERIFY)
         statsd.increment('nb.http_requests.get')
         while resp.status_code != 200:
-            db_client.record_error(url, resp.status_code, resp.headers, resp.text)
+            db_client.record_error(url, resp.status_code, str(resp.headers), resp.text)
             if resp.status_code in [403, 500, 503]:  # exponential backoff
                 logger.debug("Request for {0} returned {1} response".format(url, resp.status_code))
                 if backoff < constants.BACKOFF_MAX:
@@ -164,7 +164,7 @@ def get_comment_count(hnurl):
         story = requests.get(hnurl, verify=constants.VERIFY)
         statsd.increment('nb.http_requests.get')
         while story.status_code != 200:
-            db_client.record_error(hnurl, story.status_code, story.headers, story.text)
+            db_client.record_error(hnurl, story.status_code, str(story.headers), story.text)
             if story.status_code in [403, 429, 500, 503]:  # exponential backoff
                 logger.debug(
                     "Request for {0} returned {1} response".format(hnurl, story.status_code))
