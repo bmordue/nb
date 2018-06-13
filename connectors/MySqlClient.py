@@ -42,7 +42,7 @@ class MySqlClient(DbConnector):
         logger.info('Found {0} results.'.format(len(rows)))
         return rows
 
-    def insert_domain_entry(self, nb_hash, nb_url):
+    def insert_domain_entry(self, nb_hash, nb_url, headers=None, body=None):
         cursor = self.conn.cursor()
         cursor.execute(
             '''INSERT IGNORE INTO domains (nb_hash, domain, toplevel, toplevel_new) VALUES 
@@ -102,5 +102,3 @@ class MySqlClient(DbConnector):
         cursor.execute(query, (count, comments_url))
         cursor.close()
         self.conn.commit()
-
-

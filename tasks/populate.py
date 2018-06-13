@@ -3,7 +3,6 @@ from time import sleep
 
 import requests
 import requests.exceptions
-import statsd
 from bs4 import BeautifulSoup
 from datadog import statsd
 
@@ -79,6 +78,7 @@ def process_batch(cookie_store, batch):
     except ValueError as e:
         logger.error('Failed to get stories for request {0}'.format(req_str))
         logger.error(e)
+        statsd.event('Failed to get stories', e.message, alert_type='error')
         logger.debug(stories.text)
 
     db_client.close_connection()
@@ -137,7 +137,7 @@ def get_with_backoff(url, on_success):
                     return None
             elif resp.status_code == 520:
                 logger.info("520 response, skipping {0} and waiting {1} sec"
-                             .format(url, constants.BACKOFF_ON_520))
+                            .format(url, constants.BACKOFF_ON_520))
                 logger.debug("Response headers: {0}".format(resp.headers))
                 logger.debug("Response body: {0}".format(resp.text))
                 sleep(constants.BACKOFF_ON_520)
@@ -149,6 +149,7 @@ def get_with_backoff(url, on_success):
     except requests.exceptions.RequestException as e:
         logger.error("url is: {0}".format(url))
         logger.error(e)
+        statsd.event('Request failed', e.message, alert_type='error')
         return None
 
     return on_success(resp)
@@ -193,5 +194,7 @@ def get_comment_count(hnurl):
     except requests.exceptions.RequestException as e:
         logger.error("hnurl: {0}".format(hnurl))
         logger.error(e)
+        statsd.event('Page render error!', e.message, alert_type='error')
         return None
+
     return parse_story(story.text)

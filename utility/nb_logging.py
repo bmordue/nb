@@ -7,5 +7,5 @@ def setup_logger(name):
     handler.setFormatter(formatter)
     logger = logging.getLogger(name)
     logger.addHandler(handler)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
     return logger

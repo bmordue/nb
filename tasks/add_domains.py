@@ -16,8 +16,8 @@ def add_domains():
     for row in rows:
         nb_hash = row['nb_hash']
         nb_url = NbUrl(row['url'])
-        (domain, toplevel, toplevel_new) = nb_url.get_domain_info()
-        db_client.insert_domain_entry(nb_hash, nb_url, domain, toplevel, toplevel_new)
+        domain, toplevel, toplevel_new = nb_url.get_domain_info()
+        db_client.insert_domain_entry(nb_hash, nb_url.url, domain, toplevel, toplevel_new)
 
 
 if __name__ == "__main__":

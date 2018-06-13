@@ -21,4 +21,4 @@ class DbConnector:
 
     def unstar(self, nb_hash): raise NotImplementedError
     
-    def record_error(self, url, code): raise NotImplementedError
+    def record_error(self, url, code, headers, body): raise NotImplementedError

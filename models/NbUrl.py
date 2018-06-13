@@ -9,4 +9,4 @@ class NbUrl:
             toplevel_new = '.'.join(domain.split('.')[1:])
         else:
             toplevel_new = domain
-        return (domain, toplevel, toplevel_new)
+        return domain, toplevel, toplevel_new
