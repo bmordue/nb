@@ -5,7 +5,7 @@ import requests
 import requests.exceptions
 import statsd
 from bs4 import BeautifulSoup
-from statsd import StatsdTimer
+from datadog import statsd
 
 from utility import constants, client_factory
 from utility import nb_logging
@@ -13,7 +13,7 @@ from utility import nb_logging
 logger = nb_logging.setup_logger('populate')
 
 
-@StatsdTimer.wrap('nb.populate.populate')
+@statsd.timed('nb.populate.populate')
 def populate():
     logger.info('Set up DB and add a row for each HN story')
 
@@ -56,7 +56,7 @@ def populate():
 
 
 # Process a batch of hashes and add details to DB
-@StatsdTimer.wrap('nb.populate.process_batch')
+@statsd.timed('nb.populate.process_batch')
 def process_batch(cookie_store, batch):
     # logger.debug("Processing batch: {0}".format(batch))
     req_str = constants.NB_ENDPOINT + '/reader/starred_stories?'
@@ -85,7 +85,7 @@ def process_batch(cookie_store, batch):
 
 
 # read through DB for rows without comment count, then add it
-@StatsdTimer.wrap('nb.populate.add_comment_counts')
+@statsd.timed('nb.populate.add_comment_counts')
 def add_comment_counts():
     logger.info('Add comment counts to stories in DB')
     db_client = client_factory.get_db_client()
@@ -104,7 +104,7 @@ def get_hn_url(content):
 
 
 # Parse HN story to find how many comments there are
-@StatsdTimer.wrap('nb.populate.parse_story')
+@statsd.timed('nb.populate.parse_story')
 def parse_story(content):
     soup = BeautifulSoup(content)
     comment_count = len(soup.find_all("div", {"class": "comment"}))
@@ -115,7 +115,7 @@ def parse_story(content):
 # eg request_with_backoff(hnurl, parse_story)
 # Hmm. Falls down on POSTs. :-( Needs more treatment
 # TODO: cf requests PreparedRequest!
-@StatsdTimer.wrap('nb.populate.get_with_backoff')
+@statsd.timed('nb.populate.get_with_backoff')
 def get_with_backoff(url, on_success):
     db_client = client_factory.get_db_client()
     try:
@@ -155,7 +155,7 @@ def get_with_backoff(url, on_success):
 
 
 # TODO: DEPRECATE in favour of request_with_backoff()
-@StatsdTimer.wrap('nb.populate.get_comment_count')
+@statsd.timed('nb.populate.get_comment_count')
 def get_comment_count(hnurl):
     db_client = client_factory.get_db_client()
     db_client.ensure_stories_table_exists()

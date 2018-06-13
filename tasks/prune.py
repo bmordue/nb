@@ -3,7 +3,7 @@ from utility import nb_logging
 import requests
 import requests.exceptions
 from time import sleep
-from statsd import StatsdTimer
+from datadog import statsd
 import statsd
 
 logger = nb_logging.setup_logger('prune')
@@ -11,7 +11,7 @@ logger = nb_logging.setup_logger('prune')
 
 # TODO: deprecate in favour of more generic function
 # TODO: move statsd bucket names to constants.py
-@StatsdTimer.wrap('nb.prune.remove_star_with_backoff')
+@statsd.timed('nb.prune.remove_star_with_backoff')
 def remove_star_with_backoff(story_hash, mycookies):
     backoff = constants.BACKOFF_START
     unstar_url = constants.NB_ENDPOINT + '/reader/mark_story_hash_as_unstarred'
@@ -48,7 +48,7 @@ def remove_star_with_backoff(story_hash, mycookies):
     return True
 
 
-@StatsdTimer.wrap('nb.prune.prune_starred')
+@statsd.timed('nb.prune.prune_starred')
 def prune_starred():
     logger.info('Remove all stars on stories with less than {0} comments'.format(
         constants.COMMENTS_THRESHOLD))
@@ -73,7 +73,7 @@ def prune_starred():
     logger.info('Finished pruning stars')
 
 
-@StatsdTimer.wrap('nb.prune.check_if_starred')
+@statsd.timed('nb.prune.check_if_starred')
 def check_if_starred(story_hash):
     r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS,
                       verify=constants.VERIFY)

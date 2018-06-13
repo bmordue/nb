@@ -1,4 +1,4 @@
-from statsd import StatsdTimer
+from datadog import statsd
 
 from models.NbUrl import NbUrl
 from utility import nb_logging, client_factory
@@ -6,7 +6,7 @@ from utility import nb_logging, client_factory
 logger = nb_logging.setup_logger('add_domains')
 
 
-@StatsdTimer.wrap('nb.add_domains.add_domains')
+@statsd.timed('nb.add_domains.add_domains')
 def add_domains():
     db_client = client_factory.get_db_client()
     db_client.ensure_domains_table_exists()
