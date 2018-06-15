@@ -4,7 +4,6 @@ import requests
 import requests.exceptions
 from time import sleep
 from datadog import statsd
-import statsd
 
 logger = nb_logging.setup_logger('prune')
 
