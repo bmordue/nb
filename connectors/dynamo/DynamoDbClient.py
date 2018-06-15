@@ -24,7 +24,7 @@ class DynamoDbClient(DbConnector):
         try:
             story.save()
         except Exception as err:
-            logger.error("Caught exception while saving Story model, wait 1 sec and retry\n")
+            logger.error("Caught exception while saving Story model, wait 1 sec and retry")
             statsd.event('Failed to save story', err.message, alert_type='error')
             time.sleep(1)
             story.save()
@@ -43,7 +43,7 @@ class DynamoDbClient(DbConnector):
         domain.save()
 
     def list_stories_with_comments_fewer_than(self, threshold):
-        stories = StoryModel.scan(StoryModel.comments < threshold)
+        stories = StoryModel.scan(StoryModel.comments < threshold and StoryModel.comments >= 0)
         return stories
 
     def list_stories_without_comment_count(self):
