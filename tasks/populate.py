@@ -30,7 +30,7 @@ def populate():
     statsd.increment('nb.http_requests.get')
     hashlist = hashes.json()['starred_story_hashes']
 
-    logger.info('Size of hashlist is ' + str(len(hashlist)))
+    logger.info('Size of hashlist is %s', len(hashlist))
 
     i = 0
     count_batches = 0
@@ -39,7 +39,7 @@ def populate():
     for ahash in hashlist:
         i += 1
         if i > constants.MAX_PARSE:
-            logger.info('Reached MAX_PARSE ({0})'.format(constants.MAX_PARSE))
+            logger.info('Reached MAX_PARSE (%s)', constants.MAX_PARSE)
             break
         if batchcounter > constants.BATCH_SIZE:
             process_batch(mycookies, batch)
@@ -51,7 +51,7 @@ def populate():
     process_batch(mycookies, batch)
     count_batches += 1
     logger.info('Finished adding story hashes to DB.')
-    logger.info('Processed {0} hashes in {1} batches.'.format(i, count_batches))
+    logger.info('Processed %s hashes in %s batches.', i, count_batches)
 
 
 # Process a batch of hashes and add details to DB
@@ -76,7 +76,7 @@ def process_batch(cookie_store, batch):
                 db_client.add_story(story['story_hash'], story['story_date'], hnurl,
                                     story['story_permalink'])
     except ValueError as e:
-        logger.error('Failed to get stories for request {0}'.format(req_str))
+        logger.error('Failed to get stories for request %s', req_str)
         logger.error(e)
         statsd.event('Failed to get stories', e.message, alert_type='error')
         logger.debug(stories.text)
@@ -93,7 +93,7 @@ def add_comment_counts():
     for row in rows:
         url = row.hnurl
         count = get_comment_count(url)
-        logger.debug("Count for {0} is {1}".format(url, count))
+        logger.debug("Count for %s is %s", url, count)
         if count is not None:
             db_client.add_comment_count(url, count)
     logger.info('Finished adding comment counts')
@@ -125,29 +125,28 @@ def get_with_backoff(url, on_success):
         while resp.status_code != 200:
             db_client.record_error(url, resp.status_code, str(resp.headers), resp.text)
             if resp.status_code in [403, 500, 503]:  # exponential backoff
-                logger.debug("Request for {0} returned {1} response".format(url, resp.status_code))
+                logger.debug("Request for %s returned %s response", url, resp.status_code)
                 if backoff < constants.BACKOFF_MAX:
-                    logger.debug("Backing off {0} seconds".format(backoff))
+                    logger.debug("Backing off %s seconds", backoff)
                     sleep(backoff)
                     resp = requests.get(url, verify=constants.VERIFY)
                     statsd.increment('nb.http_requests.get')
                     backoff = backoff * constants.BACKOFF_FACTOR
                 else:
-                    logger.debug("Giving up after {0} seconds for {1}".format(backoff, url))
+                    logger.debug("Giving up after %s seconds for %s", backoff, ur))
                     return None
             elif resp.status_code == 520:
-                logger.info("520 response, skipping {0} and waiting {1} sec"
-                            .format(url, constants.BACKOFF_ON_520))
-                logger.debug("Response headers: {0}".format(resp.headers))
-                logger.debug("Response body: {0}".format(resp.text))
+                logger.info("520 response, skipping %s and waiting %s sec", url, constants.BACKOFF_ON_520)
+                logger.debug("Response headers: %s", resp.headers)
+                logger.debug("Response body: %s", resp.text)
                 sleep(constants.BACKOFF_ON_520)
                 return None
             else:
                 logger.debug(
-                    "Request for {0} returned unhandled {1} response".format(url, resp.status_code))
+                    "Request for %s returned unhandled %s response", url, resp.status_code)
                 raise requests.exceptions.RequestException()
     except requests.exceptions.RequestException as e:
-        logger.error("url is: {0}".format(url))
+        logger.error("url is: %s", url)
         logger.error(e)
         statsd.event('Request failed', e.message, alert_type='error')
         return None
@@ -168,11 +167,9 @@ def get_comment_count(hnurl):
             db_client.record_error(hnurl, story.status_code, str(story.headers), story.text)
             if story.status_code in [403, 429, 500, 503]:  # exponential backoff
                 logger.debug(
-                    "Request for {0} returned {1} response".format(hnurl, story.status_code))
-                logger.debug("{0}".format(story.text))
-                logger.debug("{0}".format(story.headers))
+                    "Request for %s returned %s response", hnurl, story.status_code)
                 if backoff < constants.BACKOFF_MAX:
-                    logger.debug("Backing off {0} seconds".format(backoff))
+                    logger.debug("Backing off %s seconds", backoff)
                     sleep(backoff)
                     backoff *= constants.BACKOFF_FACTOR
                     story = requests.get(hnurl, verify=constants.VERIFY)
@@ -182,17 +179,17 @@ def get_comment_count(hnurl):
                     return None
             elif story.status_code in [520]:
                 logger.debug(
-                    "520 response for {0}; waiting {1} sec".format(hnurl, constants.BACKOFF_ON_520))
-                logger.debug("Response headers: {0}".format(story.headers))
-                logger.debug("Response body: {0}".format(story.text))
+                    "520 response for %s; waiting %s sec", hnurl, constants.BACKOFF_ON_520)
+                logger.debug("Response headers: %s", story.headers)
+                logger.debug("Response body: %s", story.text)
                 sleep(constants.BACKOFF_ON_520)
                 return None
             else:
-                logger.debug("Request for {0} returned unhandled {1} response"
-                             .format(hnurl, story.status_code))
+                logger.debug("Request for %s returned unhandled %s response",
+                             hnurl, story.status_code)
                 raise requests.exceptions.RequestException()
     except requests.exceptions.RequestException as e:
-        logger.error("hnurl: {0}".format(hnurl))
+        logger.error("hnurl: %s", hnurl)
         logger.error(e)
         statsd.event('Page render error!', e.message, alert_type='error')
         return None
