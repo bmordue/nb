@@ -3,7 +3,7 @@ __author__ = 'ben'
 import os
 
 NB_ENDPOINT = 'https://newsblur.com'
-NB_HN_FEED_ID = 5980394
+NB_HN_FEED_ID = 5982259
 #DATABASE_FILENAME = 'stories.sqlite'
 DB_HOST = os.getenv('DB_HOST','stage.benmordue.co.uk')
 # DB_PORT = 5432
