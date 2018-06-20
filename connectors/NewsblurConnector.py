@@ -151,11 +151,8 @@ class NewsblurConnector:
                               verify=constants.VERIFY)
         statsd.increment('nb.http_requests.get')
         hashlist = hashes.json()['starred_story_hashes']
-    
-        if story_hash in hashlist:
-            return True
-        else:
-            return False
+
+        return bool(story_hash in hashlist)
 
     # TODO: deprecate in favour of more generic function
     # TODO: move statsd bucket names to constants.py
@@ -171,7 +168,7 @@ class NewsblurConnector:
                 if resp.status_code in [403, 500, 503]:  # exponential backoff
                     logger.info("Request for %s returned %s response" % (unstar_url, resp.status_code))
                     if backoff < constants.BACKOFF_MAX:
-                        logger.info("Backing off %s seconds" % backoff)
+                        logger.info("Backing off %s seconds", backoff)
                         sleep(backoff)
                         backoff = backoff * constants.BACKOFF_FACTOR
                         resp = requests.post(unstar_url,
@@ -179,18 +176,18 @@ class NewsblurConnector:
                                              verify=constants.VERIFY)
                         statsd.increment('nb.http_requests.post')
                     else:
-                        logger.warn("Giving up after %s seconds for %s" % (backoff, unstar_url))
+                        logger.warn("Giving up after %s seconds for %s", backoff, unstar_url)
                         return False
                 elif resp.status_code == 520:
-                    logger.warn("520 response, skipping %s" % unstar_url)
+                    logger.warn("520 response, skipping %s", unstar_url)
                     return False
                 else:
-                    logger.error("Request for %s returned unhandled %s response" %
-                                 (unstar_url, resp.status_code))
+                    logger.error("Request for %s returned unhandled %s response",
+                                 unstar_url, resp.status_code)
                     raise requests.exceptions.RequestException()
         except requests.exceptions.RequestException as e:
-            logger.info("url is: %s" % unstar_url)
+            logger.info("url is: %s", unstar_url)
             logger.error(e)
             return False
-    
+
         return True
