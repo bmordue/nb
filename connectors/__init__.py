@@ -1,1 +1,1 @@
-__all__ = ["NewsblurConnector"]
+__all__ = ["NewsblurConnector", "DbConnector", "dynamo"]
