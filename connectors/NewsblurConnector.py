@@ -12,9 +12,6 @@ from utility import nb_logging
 
 from time import sleep
 
-import requests
-import requests.exceptions
-
 import exceptions
 
 logger = nb_logging.setup_logger('NewsblurConnector')
