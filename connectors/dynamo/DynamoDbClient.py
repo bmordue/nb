@@ -24,9 +24,9 @@ class DynamoDbClient(DbConnector):
         try:
             story.save()
         except Exception as err:
-            logger.error("Caught exception while saving Story model, wait 1 sec and retry")
+            logger.error("Caught exception while saving Story model, wait 2 sec and retry")
             statsd.event('Failed to save story', err.message, alert_type='error')
-            time.sleep(1)
+            time.sleep(2)
             story.save()
 
     def close_connection(self): pass
