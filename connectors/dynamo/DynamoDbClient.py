@@ -18,6 +18,7 @@ class DynamoDbClient(DbConnector):
             story = dummy
         story.comments = count
         story.save()
+        statsd.increment('nb.comment_counts_added')
 
     def add_story(self, nb_hash, added, comments_url, story_url):
         story = StoryModel(comments_url, nb_hash=nb_hash, added=added, url=story_url)
@@ -28,6 +29,7 @@ class DynamoDbClient(DbConnector):
             statsd.event('Failed to save story', err.message, alert_type='error')
             time.sleep(2)
             story.save()
+        statsd.increment('nb.stories_added')
 
     def close_connection(self): pass
 
@@ -41,6 +43,7 @@ class DynamoDbClient(DbConnector):
     def insert_domain_entry(self, nb_hash, nb_url, domain, toplevel, toplevel_new):
         domain = DomainModel(nb_hash, nb_url=nb_url, domain=domain, toplevel=toplevel, toplevel_new=toplevel_new)
         domain.save()
+        statsd.increment('nb.domains_added')
 
     def list_stories_with_comments_fewer_than(self, threshold):
         stories = StoryModel.scan(StoryModel.comments < threshold and StoryModel.comments >= 0)
@@ -63,6 +66,7 @@ class DynamoDbClient(DbConnector):
                 StoryModel.starred.set(False)
             ]
         )
+        statsd.increment('nb.stars_removed')
 
     @staticmethod
     def get_expiry_time():
@@ -72,3 +76,4 @@ class DynamoDbClient(DbConnector):
         error = ErrorModel(url, status_code=code, headers=headers, body=body,
                            ttl=DynamoDbClient.get_expiry_time())
         error.save()
+        statsd.increment('nb.errors_recorded')
