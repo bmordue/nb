@@ -1,7 +1,7 @@
+from connectors.NewsblurConnector import NewsblurConnector
 from utility import constants, client_factory
 from utility import nb_logging
 from datadog import statsd
-import connectors.NewsblurConnector
 
 logger = nb_logging.setup_logger('prune')
 

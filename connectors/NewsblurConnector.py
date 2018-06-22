@@ -7,12 +7,11 @@ import requests.exceptions
 from datadog import statsd
 from bs4 import BeautifulSoup
 
+from exceptions.BlacklistedError import BlacklistedError
 from utility import constants
 from utility import nb_logging
 
 from time import sleep
-
-import exceptions
 
 logger = nb_logging.setup_logger('NewsblurConnector')
 
@@ -24,11 +23,11 @@ class NewsblurConnector:
 
     def connect(self):
         """ make connection """
-        r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS,
-                      verify=constants.VERIFY)
+        r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS, verify=constants.VERIFY)
         statsd.increment('nb.http_requests.post')
         self.cookies = r.cookies
 
+    @statsd.timed('nb.NewsblurConnector.get_nb_hash_list')
     def get_nb_hash_list(self):
         """ get a list of story identifiers (hashes) from NewsBlur """
         hashes = requests.get(constants.NB_ENDPOINT + '/reader/starred_story_hashes',
@@ -36,6 +35,7 @@ class NewsblurConnector:
         statsd.increment('nb.http_requests.get')
         return hashes.json()['starred_story_hashes']
 
+    @statsd.timed('nb.NewsblurConnector.get_story_list')
     def get_story_list(self, batch):
         """ get a list of stories corresponding to a list of hashes """
         req_str = constants.NB_ENDPOINT + '/reader/starred_stories?'
@@ -57,7 +57,7 @@ class NewsblurConnector:
     # eg request_with_backoff(hnurl, parse_story)
     # Hmm. Falls down on POSTs. :-( Needs more treatment
     # TODO: cf requests PreparedRequest!
-    @statsd.timed('nb.populate.get_with_backoff')
+    @statsd.timed('nb.NewsblurConnector.get_with_backoff')
     def get_with_backoff(self, url, on_success):
         try:
             backoff = constants.BACKOFF_START
@@ -95,7 +95,7 @@ class NewsblurConnector:
     
     
     # TODO: DEPRECATE in favour of request_with_backoff()
-    @statsd.timed('nb.populate.get_comment_count')
+    @statsd.timed('nb.NewsblurConnector.get_comment_count')
     def get_comment_count(self, hnurl):
         sleep(1)
         try:
@@ -169,7 +169,7 @@ class NewsblurConnector:
                         sleep(backoff)
                         backoff = backoff * constants.BACKOFF_FACTOR
                         resp = requests.post(unstar_url,
-                                             {'story_hash': story_hash}, cookies=mycookies,
+                                             {'story_hash': story_hash}, cookies=self.cookies,
                                              verify=constants.VERIFY)
                         statsd.increment('nb.http_requests.post')
                     else:

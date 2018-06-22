@@ -5,8 +5,6 @@ from utility import nb_logging
 
 from connectors.NewsblurConnector import NewsblurConnector
 
-import exceptions
-
 logger = nb_logging.setup_logger('add_comment_counts')
 
 
