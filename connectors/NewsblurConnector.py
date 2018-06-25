@@ -7,11 +7,15 @@ import requests.exceptions
 from datadog import statsd
 from bs4 import BeautifulSoup
 
-from exceptions.BlacklistedError import BlacklistedError
+from nb_exceptions.BlacklistedError import BlacklistedError
 from utility import constants
 from utility import nb_logging
 
 from time import sleep
+
+import rollbar
+rollbar.init('00b402fc0da54ed1af8687d4c4389911')
+
 
 logger = nb_logging.setup_logger('NewsblurConnector')
 
@@ -47,6 +51,7 @@ class NewsblurConnector:
         try:
             story_list = json.loads(stories.text)['stories']
         except ValueError as e:
+	    rollbar.report_exc_info()
             logger.error('Failed to get stories for request %s', req_str)
             logger.error(e)
             statsd.event('Failed to get stories', e.message, alert_type='error')
@@ -86,6 +91,7 @@ class NewsblurConnector:
                         "Request for %s returned unhandled %s response", url, resp.status_code)
                     raise requests.exceptions.RequestException()
         except requests.exceptions.RequestException as e:
+	    rollbar.report_exc_info()
             logger.error("url is: %s", url)
             logger.error(e)
             statsd.event('Request failed', e.message, alert_type='error')
@@ -129,6 +135,7 @@ class NewsblurConnector:
                                  hnurl, story.status_code)
                     raise requests.exceptions.RequestException()
         except requests.exceptions.RequestException as e:
+	    rollbar.report_exc_info()
             logger.error("hnurl: %s", hnurl)
             statsd.event('RequestException', e.message, alert_type='error')
             return None

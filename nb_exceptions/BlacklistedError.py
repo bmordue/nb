@@ -1,0 +1,2 @@
+class BlacklistedError(Exception):
+    pass
