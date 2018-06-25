@@ -7,7 +7,7 @@ import requests.exceptions
 from datadog import statsd
 from bs4 import BeautifulSoup
 
-from exceptions.BlacklistedError import BlacklistedError
+from exceptions import *
 from utility import constants
 from utility import nb_logging
 
