@@ -101,7 +101,7 @@ class NewsblurConnector:
             while resp.status_code != 200:
                 if resp.status_code in [403, 500, 503]:  # exponential backoff
                     logger.info(
-                        "Request for %s returned %s response" % (req.url, resp.status_code))
+                        "Request for %s returned %s response", req.url, resp.status_code)
                     if backoff < constants.BACKOFF_MAX:
                         logger.info("Backing off %s seconds", backoff)
                         sleep(backoff)
