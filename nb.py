@@ -9,7 +9,6 @@ from utility import nb_logging
 import rollbar
 
 rollbar.init('00b402fc0da54ed1af8687d4c4389911')
-rollbar.report_message('Rollbar is configured correctly')
 logger = nb_logging.setup_logger('NB')
 
 if __name__ == "__main__":
