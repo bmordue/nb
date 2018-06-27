@@ -15,8 +15,6 @@ from time import sleep
 
 import rollbar
 
-rollbar.init('00b402fc0da54ed1af8687d4c4389911')
-
 logger = nb_logging.setup_logger('NewsblurConnector')
 
 
@@ -58,10 +56,9 @@ class NewsblurConnector:
             logger.debug(stories.text)
         return story_list
 
-    # TODO: DEPRECATE in favour of request_with_backoff()
     @statsd.timed('nb.NewsblurConnector.get_comment_count')
     def get_comment_count(self, hnurl):
-        req = requests.Request('GET', hnurl, cookies=self.cookies, verify=constants.VERIFY)
+        req = requests.Request('GET', hnurl, cookies=self.cookies)
         return self.parse_story(self.request_with_backoff(req))
 
     # Parse HN story to find how many comments there are
@@ -85,9 +82,7 @@ class NewsblurConnector:
     @statsd.timed('nb.NewsblurConnector.remove_star_with_backoff')
     def remove_star_with_backoff(self, story_hash):
         unstar_url = constants.NB_ENDPOINT + '/reader/mark_story_hash_as_unstarred'
-        req = requests.Request('POST', unstar_url,
-                             {'story_hash': story_hash}, cookies=self.cookies,
-                             verify=constants.VERIFY)
+        req = requests.Request('POST', unstar_url, params={'story_hash': story_hash}, cookies=self.cookies)
         return bool(self.request_with_backoff(req) is not None)
 
     @statsd.timed('nb.NewsblurConnector.remove_star_with_backoff')
@@ -96,21 +91,24 @@ class NewsblurConnector:
         backoff = constants.BACKOFF_START
         s = requests.Session()
         try:
-            resp = s.send(req)
-            statsd.increment('nb.http_requests.post')
+            resp = s.send(req, verify=constants.VERIFY)
+            statsd.increment('nb.http_requests.count')
+            statsd.increment('nb.http_requests.status_' + str(resp.status_code))
             while resp.status_code != 200:
-                if resp.status_code in [403, 500, 503]:  # exponential backoff
+                if resp.status_code in [429, 500, 503]:  # exponential backoff
                     logger.info(
                         "Request for %s returned %s response", req.url, resp.status_code)
                     if backoff < constants.BACKOFF_MAX:
                         logger.info("Backing off %s seconds", backoff)
                         sleep(backoff)
                         backoff = backoff * constants.BACKOFF_FACTOR
-                        resp = s.send(req)
-                        statsd.increment('nb.http_requests.post')
+                        resp = s.send(req, verify=constants.VERIFY)
+                        statsd.increment('nb.http_requests.count')
                     else:
                         logger.warn("Giving up after %s seconds for %s", backoff, req.url)
                         return None
+                elif resp.status_code == 403:
+                    raise BlacklistedError("Received 403 response for {0}. Is this IP blacklisted?".format(req.url))
                 elif resp.status_code == 520:
                     logger.warn("520 response, skipping %s", req.url)
                     return None
