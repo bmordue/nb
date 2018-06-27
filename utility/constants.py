@@ -21,3 +21,4 @@ BACKOFF_MAX = 120  # in seconds
 BACKOFF_START = 5
 BACKOFF_FACTOR = 2
 BACKOFF_ON_520 = 600
+POLITE_WAIT = 1 # seconds between requests, even if not rate-limited
