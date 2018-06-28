@@ -59,7 +59,8 @@ class NewsblurConnector:
     @statsd.timed('nb.NewsblurConnector.get_comment_count')
     def get_comment_count(self, hnurl):
         req = requests.Request('GET', hnurl, cookies=self.cookies)
-        return self.parse_story(self.request_with_backoff(req))
+        story_text = self.request_with_backoff(req).text
+        return self.parse_story(story_text)
 
     # Parse HN story to find how many comments there are
     @statsd.timed('nb.NewsblurConnector.parse_story')
@@ -87,11 +88,12 @@ class NewsblurConnector:
 
     @statsd.timed('nb.NewsblurConnector.remove_star_with_backoff')
     def request_with_backoff(self, req):
-        sleep(1)
+        sleep(constants.POLITE_WAIT)
         backoff = constants.BACKOFF_START
-        s = requests.Session()
+        session = requests.Session()
+        prepared_req = session.prepare_request(req)
         try:
-            resp = s.send(req, verify=constants.VERIFY)
+            resp = session.send(prepared_req, verify=constants.VERIFY)
             statsd.increment('nb.http_requests.count')
             statsd.increment('nb.http_requests.status_' + str(resp.status_code))
             while resp.status_code != 200:
@@ -102,13 +104,13 @@ class NewsblurConnector:
                         logger.info("Backing off %s seconds", backoff)
                         sleep(backoff)
                         backoff = backoff * constants.BACKOFF_FACTOR
-                        resp = s.send(req, verify=constants.VERIFY)
+                        resp = session.send(prepared_req, verify=constants.VERIFY)
                         statsd.increment('nb.http_requests.count')
                     else:
                         logger.warn("Giving up after %s seconds for %s", backoff, req.url)
                         return None
                 elif resp.status_code == 403:
-                    raise BlacklistedError("Received 403 response for {0}. Is this IP blacklisted?".format(req.url))
+                    raise BlacklistedError("Received 403 response for {0}. (Has this IP been blacklisted?)".format(req.url))
                 elif resp.status_code == 520:
                     logger.warn("520 response, skipping %s", req.url)
                     return None
