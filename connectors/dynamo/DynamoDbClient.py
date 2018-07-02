@@ -1,3 +1,5 @@
+from ddtrace import patch_all
+
 import time
 
 from datadog import statsd
@@ -8,13 +10,14 @@ from connectors.dynamo.StoryModel import StoryModel
 from connectors.dynamo.ErrorModel import ErrorModel
 from utility import nb_logging
 
+patch_all()
 logger = nb_logging.setup_logger('DynamoDbClient')
 
 
 class DynamoDbClient(DbConnector):
     def add_comment_count(self, comments_url, count):
         stories = StoryModel.query(comments_url)
-        for dummy in stories: #only want the first element...
+        for dummy in stories:  # only want the first element...
             story = dummy
         story.comments = count
         story.save()
@@ -31,7 +34,8 @@ class DynamoDbClient(DbConnector):
             story.save()
         statsd.increment('nb.stories_added')
 
-    def close_connection(self): pass
+    def close_connection(self):
+        pass
 
     def ensure_domains_table_exists(self):
         DomainModel.create_table()
@@ -41,12 +45,13 @@ class DynamoDbClient(DbConnector):
         ErrorModel.create_table()
 
     def insert_domain_entry(self, nb_hash, nb_url, domain, toplevel, toplevel_new):
-        domain = DomainModel(nb_hash, nb_url=nb_url, domain=domain, toplevel=toplevel, toplevel_new=toplevel_new)
+        domain = DomainModel(nb_hash, nb_url=nb_url, domain=domain, toplevel=toplevel,
+                             toplevel_new=toplevel_new)
         domain.save()
         statsd.increment('nb.domains_added')
 
     def list_stories_with_comments_fewer_than(self, threshold):
-        stories = StoryModel.scan(StoryModel.comments < threshold and StoryModel.comments >= 0)
+        stories = StoryModel.scan((StoryModel.comments < threshold) & (StoryModel.comments >= 0))
         return stories
 
     def list_stories_without_comment_count(self):
@@ -59,7 +64,8 @@ class DynamoDbClient(DbConnector):
         return list(map(lambda s: {'nb_hash': s.nb_hash, 'url': s.url}, stories))
 
     def unstar(self, nb_hash):
-        story = StoryModel.scan(StoryModel.nb_hash == nb_hash)
+        stories = StoryModel.scan(StoryModel.nb_hash == nb_hash)
+        story = stories.next() # only expect one result
         story.starred = False
         story.update(
             actions=[
@@ -70,7 +76,7 @@ class DynamoDbClient(DbConnector):
 
     @staticmethod
     def get_expiry_time():
-        return int(time.time()) + 24*60*60
+        return int(time.time()) + 24 * 60 * 60
 
     def record_error(self, url, code, headers, body):
         error = ErrorModel(url, status_code=code, headers=headers, body=body,

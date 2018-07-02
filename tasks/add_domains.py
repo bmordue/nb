@@ -21,7 +21,4 @@ def add_domains():
 
 
 if __name__ == "__main__":
-    from utility import nb_logging
-
-    logger = nb_logging.setup_logger('NB')
     add_domains()

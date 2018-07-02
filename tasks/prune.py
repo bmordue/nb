@@ -21,6 +21,7 @@ def prune_starred():
         candidates += 1
         if nb_client.remove_star_with_backoff(row.nb_hash):
             db_client.unstar(row.nb_hash)
+            statsd.increment('nb.prune.stars_removed')
             removed += 1
     logger.info('Successfully removed %s out of %s candidate stars', removed, candidates)
     db_client.close_connection()

@@ -17,14 +17,11 @@ def add_comment_counts():
     nb_client = NewsblurConnector()
     nb_client.connect()
 
-    try:
-        for row in rows:
-            url = row.hnurl
-            count = nb_client.get_comment_count(url)
-            logger.debug("Count for %s is %s", url, count)
-            if count is not None:
-                db_client.add_comment_count(url, count)
-        logger.info('Finished adding comment counts')
-    except Exception as e:
-        logger.exception("This IP appears to be blacklisted")
-        statsd.event('BlacklistedError', e.message, alert_type='error')
+    for row in rows:
+        url = row.hnurl
+        count = nb_client.get_comment_count(url)
+        logger.debug("Count for %s is %s", url, count)
+        if count is not None:
+            db_client.add_comment_count(url, count)
+            statsd.increment('nb.add_comment_counts.comment_counts_added')
+    logger.info('Finished adding comment counts')

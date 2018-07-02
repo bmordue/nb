@@ -20,5 +20,5 @@ VERIFY = True # useful to set to False to use with Charles proxy, but this gener
 BACKOFF_MAX = 120  # in seconds
 BACKOFF_START = 5
 BACKOFF_FACTOR = 2
-BACKOFF_ON_520 = 600
+BACKOFF_ON_520 = 10
 POLITE_WAIT = 1 # seconds between requests, even if not rate-limited
