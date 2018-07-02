@@ -1,20 +1,17 @@
-# from ddtrace import patch
-# patch(requests=True)
-
 import json
+from time import sleep
+
 import requests
 import requests.exceptions
-from datadog import statsd
+import rollbar
 from bs4 import BeautifulSoup
+from datadog import statsd
+from ddtrace import patch
 
-from nb_exceptions.BlacklistedError import BlacklistedError
 from utility import constants
 from utility import nb_logging
 
-from time import sleep
-
-import rollbar
-
+patch(requests=True)
 logger = nb_logging.setup_logger('NewsblurConnector')
 
 
@@ -59,6 +56,9 @@ class NewsblurConnector:
     @statsd.timed('nb.NewsblurConnector.get_comment_count')
     def get_comment_count(self, hnurl):
         req = requests.Request('GET', hnurl, cookies=self.cookies)
+        resp = self.request_with_backoff(req)
+        if resp is None:
+            return 0
         story_text = self.request_with_backoff(req).text
         return self.parse_story(story_text)
 
@@ -83,7 +83,8 @@ class NewsblurConnector:
     @statsd.timed('nb.NewsblurConnector.remove_star_with_backoff')
     def remove_star_with_backoff(self, story_hash):
         unstar_url = constants.NB_ENDPOINT + '/reader/mark_story_hash_as_unstarred'
-        req = requests.Request('POST', unstar_url, params={'story_hash': story_hash}, cookies=self.cookies)
+        req = requests.Request('POST', unstar_url, params={'story_hash': story_hash},
+                               cookies=self.cookies)
         return bool(self.request_with_backoff(req) is not None)
 
     @statsd.timed('nb.NewsblurConnector.remove_star_with_backoff')
@@ -97,7 +98,7 @@ class NewsblurConnector:
             statsd.increment('nb.http_requests.count')
             statsd.increment('nb.http_requests.status_' + str(resp.status_code))
             while resp.status_code != 200:
-                if resp.status_code in [429, 500, 503]:  # exponential backoff
+                if resp.status_code in [429, 500, 502, 503, 504]:  # exponential backoff
                     logger.info(
                         "Request for %s returned %s response", req.url, resp.status_code)
                     if backoff < constants.BACKOFF_MAX:
@@ -109,10 +110,9 @@ class NewsblurConnector:
                     else:
                         logger.warn("Giving up after %s seconds for %s", backoff, req.url)
                         return None
-                elif resp.status_code == 403:
-                    raise BlacklistedError("Received 403 response for {0}. (Has this IP been blacklisted?)".format(req.url))
-                elif resp.status_code == 520:
-                    logger.warn("520 response, skipping %s", req.url)
+                elif resp.status_code in [403, 520]:
+                    logger.warn("%s response, skipping %s and waiting %ss", resp.status_code,
+                                req.url, constants.BACKOFF_START)
                     return None
                 else:
                     logger.error("Request for %s returned unhandled %s response",
@@ -120,6 +120,7 @@ class NewsblurConnector:
                     raise requests.exceptions.RequestException()
             return resp
         except requests.exceptions.RequestException as e:
-                logger.info("url is: %s", req.url)
-                logger.error(e)
-                return None
+            rollbar.report_exc_info()
+            logger.info("url is: %s", req.url)
+            logger.error(e)
+            return None
