@@ -102,3 +102,6 @@ class MySqlClient(DbConnector):
         cursor.execute(query, (count, comments_url))
         cursor.close()
         self.conn.commit()
+
+    def record_error(self, url, code, headers, body):
+        pass
