@@ -1,5 +1,5 @@
-from connectors.dynamo.DynamoDbClient import DynamoDbClient
-
+from connectors.MySqlClient import MySqlClient
+import constants
 
 def get_db_client():
-    return DynamoDbClient()
+    return MySqlClient(host=constants.DB_HOST,user=constants.DB_USER,password=constants.DB_PASS,db_name=constants.DB_NAME)
