@@ -2,10 +2,15 @@ import warnings
 
 import MySQLdb
 
+from datadog import statsd
+from ddtrace import patch_all
+
 from connectors.DbConnector import DbConnector
 from utility import nb_logging
 
 logger = nb_logging.setup_logger('MySqlClient')
+patch_all()
+STATSD_PREFIX = 'nb.MySqlClient.'
 
 
 class MySqlClient(DbConnector):
@@ -34,20 +39,22 @@ class MySqlClient(DbConnector):
         self.conn.commit()
         logger.info('Executed table creation query')
 
+    @statsd.timed(STATSD_PREFIX + 'list_urls')
     def list_urls(self):
         cursor = self.conn.cursor()
         cursor.execute("SELECT hash, url FROM stories")
         rows = cursor.fetchall()
         cursor.close()
-        logger.info('Found {0} results.'.format(len(rows)))
+        logger.info('Found %s results.', len(rows))
         return rows
 
-    def insert_domain_entry(self, nb_hash, nb_url, headers=None, body=None):
+    @statsd.timed(STATSD_PREFIX + 'insert_domain_entry')
+    def insert_domain_entry(self, nb_hash, nb_url, domain, toplevel, toplevel_new):
         cursor = self.conn.cursor()
         cursor.execute(
             '''INSERT IGNORE INTO domains (nb_hash, domain, toplevel, toplevel_new) VALUES 
             (%s, %s, %s, %s)''',
-            nb_hash + nb_url.get_domain_info())
+            (nb_hash,) + nb_url.get_domain_info())
         cursor.close()
         self.conn.commit()
 
@@ -55,18 +62,19 @@ class MySqlClient(DbConnector):
         self.conn.close()
         logger.info('Closed database connection')
 
+    @statsd.timed(STATSD_PREFIX + 'list_stories_with_comments_fewer_than')
     def list_stories_with_comments_fewer_than(self, threshold):
         cursor = self.conn.cursor()
         cursor.execute("SELECT hash FROM stories WHERE comments < %s AND starred = 1", (threshold,))
         rows = cursor.fetchall()
         cursor.close()
-        logger.info('Found {0} starred stories with fewer than {1} comments'.format(len(rows),
-                                                                                    threshold))
+        logger.info('Found %s starred stories with fewer than %s comments', len(rows), threshold)
         return rows
 
+    @statsd.timed(STATSD_PREFIX + 'unstar')
     def unstar(self, nb_hash):
         cursor = self.conn.cursor()
-        cursor.execute("UPDATE stories SET starred = 0 WHERE hash = %s", nb_hash)
+        cursor.execute("UPDATE stories SET starred = 0 WHERE hash = %s", (nb_hash,))
         cursor.close()
         self.conn.commit()
 
@@ -82,13 +90,15 @@ class MySqlClient(DbConnector):
         cursor.close()
         self.conn.commit()
 
+    @statsd.timed(STATSD_PREFIX + 'add_story')
     def add_story(self, nb_hash, added, comments_url, story_url):
         insert_story_query = '''INSERT IGNORE INTO stories (hash, added, hnurl, url) VALUES (%s, %s, %s, %s)'''
         cursor = self.conn.cursor()
-        cursor.execute(insert_story_query, nb_hash, added, comments_url, story_url)
+        cursor.execute(insert_story_query, (nb_hash, added, comments_url, story_url))
         cursor.close()
         self.conn.commit()
 
+    @statsd.timed(STATSD_PREFIX + 'list_stories_without_comment_count')
     def list_stories_without_comment_count(self):
         query = '''SELECT hnurl FROM stories WHERE comments IS NULL'''
         cursor = self.conn.cursor()
@@ -96,6 +106,7 @@ class MySqlClient(DbConnector):
         cursor.close()
         return cursor.fetchall()
 
+    @statsd.timed(STATSD_PREFIX + 'add_comment_count')
     def add_comment_count(self, comments_url, count):
         query = '''UPDATE stories SET comments = %s WHERE hnurl = %s'''
         cursor = self.conn.cursor()
