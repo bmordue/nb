@@ -54,13 +54,13 @@ class MySqlClient(DbConnector):
         cursor.execute(
             '''INSERT IGNORE INTO domains (nb_hash, domain, toplevel, toplevel_new) VALUES 
             (%s, %s, %s, %s)''',
-            (nb_hash,) + nb_url.get_domain_info())
+            (nb_hash, domain, toplevel, toplevel_new))
         cursor.close()
         self.conn.commit()
 
     def close_connection(self):
         self.conn.close()
-        logger.info('Closed database connection')
+        logger.debug('Closed database connection')
 
     @statsd.timed(STATSD_PREFIX + 'list_stories_with_comments_fewer_than')
     def list_stories_with_comments_fewer_than(self, threshold):
