@@ -54,6 +54,7 @@ def process_batch(story_list):
             db_client.add_story(story['story_hash'], story['story_date'], hnurl,
                                 story['story_permalink'])
             statsd.increment('nb.stories_added')
+    statsd.increment('nb.stories.batches_procssed')
     db_client.close_connection()
 
 def get_hn_url(content):
