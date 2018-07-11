@@ -62,3 +62,5 @@ target/
 
 # C9 web IDE
 .c9/
+
+.env

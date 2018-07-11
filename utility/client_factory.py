@@ -1,7 +1,8 @@
 from connectors.MySqlClient import MySqlClient
-import utility.constants as constants
+from utility.NbConfig import NbConfig
 
 
 def get_db_client():
-    return MySqlClient(host=constants.DB_HOST, user=constants.DB_USER, password=constants.DB_PASS,
-                       db_name=constants.DB_NAME)
+    config = NbConfig()
+    return MySqlClient(host=config.get('DB_HOST'), user=config.get('DB_USER'), password=config.get('DB_PASS'),
+                       db_name=config.get('DB_NAME'))
