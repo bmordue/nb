@@ -1,1 +1,1 @@
-__all__ = ["nb_logging", "client_factory", "NbConfig"]
+__all__ = ["nb_logging", "client_factory"]
