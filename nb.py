@@ -25,7 +25,7 @@ if __name__ == "__main__":
     statsd.event("Starting nb", "Parse up to {0} stories in batches of {1}"
                  .format(config.get('MAX_PARSE', config.get('BATCH_SIZE'))))
 
-     if config.get('SHOULD_ADD_DOMAINS'):
+    if config.get('SHOULD_ADD_DOMAINS'):
         add_domains()
     if config.get('SHOULD_ADD_COMMENT_COUNTS'):
         add_comment_counts()
