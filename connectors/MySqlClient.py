@@ -139,9 +139,9 @@ class MySqlClient(DbConnector):
         return NbConfig(dict(rows))
         
     def write_config(self, config):
-        query = '''REPLACE INTO config (key, value) VALUES (%s, %s)'''
+        query = '''REPLACE INTO config (config_key, config_value) VALUES (%s, %s)'''
         cursor = self.conn.cursor()
-        for k,v in config:
-            cursor.execute(query, (k, v))
+        for key in config:
+            cursor.execute(query, (key, config[key]))
         cursor.close()
         self.conn.commit()
