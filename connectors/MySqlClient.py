@@ -6,6 +6,8 @@ from datadog import statsd
 from ddtrace import patch_all
 
 from connectors.DbConnector import DbConnector
+from models.NbUrl import NbUrl
+from utility.NbConfig import NbConfig
 from utility import nb_logging
 
 logger = nb_logging.setup_logger('MySqlClient')
@@ -116,3 +118,30 @@ class MySqlClient(DbConnector):
 
     def record_error(self, url, code, headers, body):
         pass
+
+    def ensure_config_table_exists(self):
+        table_setup_query = '''CREATE TABLE IF NOT EXISTS config
+            (config_key VARCHAR(64) UNIQUE, config_value TEXT)
+             CHARACTER SET utf8'''
+        cursor = self.conn.cursor()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            cursor.execute(table_setup_query)
+        cursor.close()
+        self.conn.commit()
+
+    def read_config(self):
+        query = '''SELECT * FROM config'''
+        cursor = self.conn.cursor()
+        cursor.execute(query)
+        cursor.close()
+        rows = cursor.fetchall()
+        return NbConfig(dict(rows))
+        
+    def write_config(self, config):
+        query = '''REPLACE INTO config (config_key, config_value) VALUES (%s, %s)'''
+        cursor = self.conn.cursor()
+        for key in config:
+            cursor.execute(query, (key, config[key]))
+        cursor.close()
+        self.conn.commit()

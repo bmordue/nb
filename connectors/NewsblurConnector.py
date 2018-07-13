@@ -8,7 +8,6 @@ from bs4 import BeautifulSoup
 from datadog import statsd
 from ddtrace import patch
 
-from utility import constants
 from utility import nb_logging
 
 patch(requests=True)
@@ -16,31 +15,36 @@ logger = nb_logging.setup_logger('NewsblurConnector')
 
 
 class NewsblurConnector:
-    def __init__(self):
+
+    def __init__(self, config):
         self.cookies = None
+        self.config = config
+        self.verify = config.get('VERIFY')
+        self.nb_endpoint = config.get('NB_ENDPOINT')
+        self.credentials = {'username': config.get('NB_USERNAME'), 'password': config.get('NB_PASSWORD')}
 
     def connect(self):
         """ make connection """
-        r = requests.post(constants.NB_ENDPOINT + '/api/login', constants.NB_CREDENTIALS,
-                          verify=constants.VERIFY)
+        r = requests.post(self.nb_endpoint + '/api/login', self.credentials,
+                          verify=self.verify)
         statsd.increment('nb.http_requests.post')
         self.cookies = r.cookies
 
     @statsd.timed('nb.NewsblurConnector.get_nb_hash_list')
     def get_nb_hash_list(self):
         """ get a list of story identifiers (hashes) from NewsBlur """
-        hashes = requests.get(constants.NB_ENDPOINT + '/reader/starred_story_hashes',
-                              cookies=self.cookies, verify=constants.VERIFY)
+        hashes = requests.get(self.nb_endpoint + '/reader/starred_story_hashes',
+                              cookies=self.cookies, verify=self.verify)
         statsd.increment('nb.http_requests.get')
         return hashes.json()['starred_story_hashes']
 
     @statsd.timed('nb.NewsblurConnector.get_story_list')
     def get_story_list(self, batch):
         """ get a list of stories corresponding to a list of hashes """
-        req_str = constants.NB_ENDPOINT + '/reader/starred_stories?'
+        req_str = self.nb_endpoint + '/reader/starred_stories?'
         for a_hash in batch:
             req_str += 'h=' + a_hash + '&'
-        stories = requests.get(req_str, cookies=self.cookies, verify=constants.VERIFY)
+        stories = requests.get(req_str, cookies=self.cookies, verify=self.verify)
         statsd.increment('nb.http_requests.get')
         story_list = []
         try:
@@ -71,9 +75,9 @@ class NewsblurConnector:
 
     @statsd.timed('nb.NewsblurConnector.check_if_starred')
     def check_if_starred(self, story_hash):
-        hashes = requests.get(constants.NB_ENDPOINT + '/reader/starred_story_hashes',
+        hashes = requests.get(self.nb_endpoint + '/reader/starred_story_hashes',
                               cookies=self.cookies,
-                              verify=constants.VERIFY)
+                              verify=self.verify)
         statsd.increment('nb.http_requests.get')
         hashlist = hashes.json()['starred_story_hashes']
 
@@ -82,37 +86,37 @@ class NewsblurConnector:
     # TODO: move statsd bucket names to constants.py
     @statsd.timed('nb.NewsblurConnector.remove_star_with_backoff')
     def remove_star_with_backoff(self, story_hash):
-        unstar_url = constants.NB_ENDPOINT + '/reader/mark_story_hash_as_unstarred'
+        unstar_url = self.nb_endpoint + '/reader/mark_story_hash_as_unstarred'
         req = requests.Request('POST', unstar_url, params={'story_hash': story_hash},
                                cookies=self.cookies)
         return bool(self.request_with_backoff(req) is not None)
 
     @statsd.timed('nb.NewsblurConnector.remove_star_with_backoff')
     def request_with_backoff(self, req):
-        sleep(constants.POLITE_WAIT)
-        backoff = constants.BACKOFF_START
+        sleep(self.config.get('POLITE_WAIT'))
+        backoff = self.config.get('BACKOFF_START')
         session = requests.Session()
         prepared_req = session.prepare_request(req)
         try:
-            resp = session.send(prepared_req, verify=constants.VERIFY)
+            resp = session.send(prepared_req, verify=self.verify)
             statsd.increment('nb.http_requests.count')
             statsd.increment('nb.http_requests.status_' + str(resp.status_code))
             while resp.status_code != 200:
                 if resp.status_code in [429, 500, 502, 503, 504]:  # exponential backoff
                     logger.info(
                         "Request for %s returned %s response", req.url, resp.status_code)
-                    if backoff < constants.BACKOFF_MAX:
+                    if backoff < self.config.get('BACKOFF_MAX'):
                         logger.info("Backing off %s seconds", backoff)
                         sleep(backoff)
-                        backoff = backoff * constants.BACKOFF_FACTOR
-                        resp = session.send(prepared_req, verify=constants.VERIFY)
+                        backoff = backoff * self.config.get('BACKOFF_FACTOR')
+                        resp = session.send(prepared_req, verify=self.config.get('VERIFY'))
                         statsd.increment('nb.http_requests.count')
                     else:
                         logger.warn("Giving up after %s seconds for %s", backoff, req.url)
                         return None
                 elif resp.status_code in [403, 520]:
                     logger.warn("%s response, skipping %s and waiting %ss", resp.status_code,
-                                req.url, constants.BACKOFF_START)
+                                req.url, self.config.get('BACKOFF_START'))
                     return None
                 else:
                     logger.error("Request for %s returned unhandled %s response",

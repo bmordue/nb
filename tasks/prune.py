@@ -1,5 +1,5 @@
 from connectors.NewsblurConnector import NewsblurConnector
-from utility import constants, client_factory
+from utility import client_factory
 from utility import nb_logging
 from datadog import statsd
 
@@ -8,12 +8,13 @@ logger = nb_logging.setup_logger('prune')
 
 @statsd.timed('nb.prune.prune_starred')
 def prune_starred():
-    logger.info('Remove all stars on stories with less than %s comments', constants.COMMENTS_THRESHOLD)
-
     db_client = client_factory.get_db_client()
-    rows = db_client.list_stories_with_comments_fewer_than(constants.COMMENTS_THRESHOLD)
-    nb_client = NewsblurConnector()
+    config = db_client.read_config()
+    rows = db_client.list_stories_with_comments_fewer_than(config.get('COMMENTS_THRESHOLD'))
+    nb_client = NewsblurConnector(config)
     nb_client.connect()
+
+    logger.info('Remove all stars on stories with fewer than %s comments', config.get('COMMENTS_THRESHOLD'))
 
     removed = 0
     candidates = 0

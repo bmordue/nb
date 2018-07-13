@@ -14,7 +14,7 @@ def add_comment_counts():
     logger.info('Add comment counts to stories in DB')
     db_client = client_factory.get_db_client()
     rows = db_client.list_stories_without_comment_count()
-    nb_client = NewsblurConnector()
+    nb_client = NewsblurConnector(db_client.read_config())
     nb_client.connect()
 
     for row in rows:

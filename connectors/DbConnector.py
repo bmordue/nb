@@ -34,3 +34,9 @@ class DbConnector:
 
     def record_error(self, url, code, headers, body):
         raise NotImplementedError
+
+    def ensure_config_table_exists(self):
+        raise NotImplementedError
+
+    def read_config(self):
+        raise NotImplementedError
