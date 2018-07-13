@@ -1,14 +1,12 @@
 import warnings
 
 import MySQLdb
-
 from datadog import statsd
 from ddtrace import patch_all
 
 from connectors.DbConnector import DbConnector
-from models.NbUrl import NbUrl
-from utility.NbConfig import NbConfig
 from utility import nb_logging
+from utility.NbConfig import NbConfig
 
 logger = nb_logging.setup_logger('MySqlClient')
 patch_all()
@@ -59,6 +57,7 @@ class MySqlClient(DbConnector):
             (nb_hash, domain, toplevel, toplevel_new))
         cursor.close()
         self.conn.commit()
+        logger.info('Added domain entry for %s', domain)
 
     def close_connection(self):
         self.conn.close()
