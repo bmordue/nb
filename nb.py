@@ -25,10 +25,12 @@ if __name__ == "__main__":
     statsd.event("Starting nb", "Parse up to {0} stories in batches of {1}"
                  .format(config.get('MAX_PARSE'), config.get('BATCH_SIZE')))
 
-    if config.get('SHOULD_ADD_DOMAINS'):
+    if distutils.util.strtobool(config.get('SHOULD_POPULATE')):
+        populate()
+    if distutils.util.strtobool(config.get('SHOULD_ADD_DOMAINS')):
         add_domains()
-    if config.get('SHOULD_ADD_COMMENT_COUNTS'):
+    if distutils.util.strtobool(config.get('SHOULD_ADD_COMMENT_COUNTS')):
         add_comment_counts()
-    if config.get('SHOULD_PRUNE_STARRED'):
+    if distutils.util.strtoboolconfig.get('SHOULD_PRUNE_STARRED')):
         prune_starred()
     logger.info('Done.')
