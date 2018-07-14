@@ -91,7 +91,7 @@ class NewsblurConnector:
 
     @statsd.timed('nb.NewsblurConnector.remove_star_with_backoff')
     def request_with_backoff(self, req):
-        sleep(self.config.get('POLITE_WAIT'))
+        sleep(float(self.config.get('POLITE_WAIT')))
         backoff = self.config.get('BACKOFF_START')
         session = requests.Session()
         prepared_req = session.prepare_request(req)
