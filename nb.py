@@ -1,6 +1,7 @@
 from ddtrace import patch_all
 
 from datadog import statsd
+import distutils
 from tasks.populate import populate
 from tasks.add_comment_counts import add_comment_counts
 from tasks.prune import prune_starred
@@ -25,12 +26,12 @@ if __name__ == "__main__":
     statsd.event("Starting nb", "Parse up to {0} stories in batches of {1}"
                  .format(config.get('MAX_PARSE'), config.get('BATCH_SIZE')))
 
-    if distutils.util.strtobool(config.get('SHOULD_POPULATE')):
-        populate()
-    if distutils.util.strtobool(config.get('SHOULD_ADD_DOMAINS')):
-        add_domains()
+#    if distutils.util.strtobool(config.get('SHOULD_POPULATE')):
+ #       populate()
+  #  if distutils.util.strtobool(config.get('SHOULD_ADD_DOMAINS')):
+#        add_domains()
     if distutils.util.strtobool(config.get('SHOULD_ADD_COMMENT_COUNTS')):
         add_comment_counts()
-    if distutils.util.strtoboolconfig.get('SHOULD_PRUNE_STARRED')):
+    if distutils.util.strtobool(config.get('SHOULD_PRUNE_STARRED')):
         prune_starred()
     logger.info('Done.')

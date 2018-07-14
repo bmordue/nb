@@ -104,8 +104,9 @@ class MySqlClient(DbConnector):
         query = '''SELECT hnurl FROM stories WHERE comments IS NULL'''
         cursor = self.conn.cursor()
         cursor.execute(query)
-        cursor.close()
-        return cursor.fetchall()
+        rows = cursor.fetchall()
+	cursor.close()
+        return rows
 
     @statsd.timed(STATSD_PREFIX + 'add_comment_count')
     def add_comment_count(self, comments_url, count):
