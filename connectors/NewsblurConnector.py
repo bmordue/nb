@@ -33,7 +33,7 @@ class NewsblurConnector:
     def get_nb_hash_list(self):
         """ get a list of story identifiers (hashes) from NewsBlur """
         hashes = requests.get(self.nb_endpoint + '/reader/starred_story_hashes',
-                              cookies=self.cookies, verify=self.verify)
+                              cookies=self.cookies)
         statsd.increment('nb.http_requests.get')
         return hashes.json()['starred_story_hashes']
 
@@ -43,7 +43,7 @@ class NewsblurConnector:
         req_str = self.nb_endpoint + '/reader/starred_stories?'
         for a_hash in batch:
             req_str += 'h=' + a_hash + '&'
-        stories = requests.get(req_str, cookies=self.cookies, verify=self.verify)
+        stories = requests.get(req_str, cookies=self.cookies)
         statsd.increment('nb.http_requests.get')
         story_list = []
         try:
@@ -75,8 +75,7 @@ class NewsblurConnector:
     @statsd.timed('nb.NewsblurConnector.check_if_starred')
     def check_if_starred(self, story_hash):
         hashes = requests.get(self.nb_endpoint + '/reader/starred_story_hashes',
-                              cookies=self.cookies,
-                              verify=self.verify)
+                              cookies=self.cookies)
         statsd.increment('nb.http_requests.get')
         hashlist = hashes.json()['starred_story_hashes']
 
@@ -97,7 +96,7 @@ class NewsblurConnector:
         session = requests.Session()
         prepared_req = session.prepare_request(req)
         try:
-            resp = session.send(prepared_req, verify=self.verify)
+            resp = session.send(prepared_req)
             statsd.increment('nb.http_requests.count')
             statsd.increment('nb.http_requests.status_' + str(resp.status_code))
             while resp.status_code != 200:
@@ -108,7 +107,7 @@ class NewsblurConnector:
                         logger.info("Backing off %s seconds", backoff)
                         sleep(backoff)
                         backoff = backoff * self.config.get('BACKOFF_FACTOR')
-                        resp = session.send(prepared_req, verify=self.config.get('VERIFY'))
+                        resp = session.send(prepared_req)
                         statsd.increment('nb.http_requests.count')
                     else:
                         logger.warn("Giving up after %s seconds for %s", backoff, req.url)
