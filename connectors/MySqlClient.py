@@ -136,7 +136,7 @@ class MySqlClient(DbConnector):
         cursor.close()
         rows = cursor.fetchall()
         return NbConfig(dict(rows))
-        
+
     def write_config(self, config):
         query = '''REPLACE INTO config (config_key, config_value) VALUES (%s, %s)'''
         cursor = self.conn.cursor()
