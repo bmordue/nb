@@ -23,7 +23,7 @@ if __name__ == "__main__":
     config = db_client.read_config()
 
     statsd.event("Starting nb", "Parse up to {0} stories in batches of {1}"
-                 .format(config.get('MAX_PARSE', config.get('BATCH_SIZE'))))
+                 .format(config.get('MAX_PARSE'), config.get('BATCH_SIZE')))
 
     if config.get('SHOULD_ADD_DOMAINS'):
         add_domains()

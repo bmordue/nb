@@ -25,8 +25,7 @@ class NewsblurConnector:
 
     def connect(self):
         """ make connection """
-        r = requests.post(self.nb_endpoint + '/api/login', self.credentials,
-                          verify=self.verify)
+        r = requests.post(self.nb_endpoint + '/api/login', self.credentials)
         statsd.increment('nb.http_requests.post')
         self.cookies = r.cookies
 

@@ -24,19 +24,17 @@ class NbConfig:
         'SHOULD_ADD_DOMAINS': 'True',
         'SHOULD_PRUNE_STARRED': 'True'
     }
-    
+
     def __init__(self, config = None):
         if config is None:
             config = {}
         self.config = config
         self.set_defaults()
-    
+
     def set_defaults(self):
-        print self.defaults
-        
         for key in self.defaults:
             if key not in self.config:
                 self.config[key] = self.defaults[key]
-                
+
     def get(self, key):
         return self.config[key]
