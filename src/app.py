@@ -11,7 +11,6 @@ from utility.NbConfig import NbConfig
 from utility import client_factory
 from utility import nb_logging
 import rollbar
-from utility import constants
 
 patch_all()
 
@@ -26,10 +25,10 @@ if __name__ == "__main__":
     statsd.event("Starting nb", "Parse up to {0} stories in batches of {1}"
                  .format(config.get('MAX_PARSE'), config.get('BATCH_SIZE')))
 
-#    if distutils.util.strtobool(config.get('SHOULD_POPULATE')):
- #       populate()
-  #  if distutils.util.strtobool(config.get('SHOULD_ADD_DOMAINS')):
-#        add_domains()
+    if distutils.util.strtobool(config.get('SHOULD_POPULATE')):
+        populate()
+    if distutils.util.strtobool(config.get('SHOULD_ADD_DOMAINS')):
+        add_domains()
     if distutils.util.strtobool(config.get('SHOULD_ADD_COMMENT_COUNTS')):
         add_comment_counts()
     if distutils.util.strtobool(config.get('SHOULD_PRUNE_STARRED')):
