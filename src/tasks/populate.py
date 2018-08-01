@@ -24,7 +24,7 @@ def populate():
 
     logger.info('Size of hashlist is %s', len(hashlist))
 
-    batch_size = config.get('BATCH_SIZE')
+    batch_size = int(config.get('BATCH_SIZE'))
     logger.debug('Batch size is %s', batch_size)
 
     i = 0
@@ -37,13 +37,14 @@ def populate():
             logger.info('Reached MAX_PARSE (%s)', config.get('MAX_PARSE'))
             break
         if batchcounter >= batch_size:
-            process_batch(nb_client.get_story_list(batch, config))
+	    logger.debug('Process batch of %s', batchcounter)
+            process_batch(nb_client.get_story_list(batch), config)
             count_batches += 1
             batchcounter = 0
             batch = []
         batchcounter += 1
         batch.append(ahash)
-    process_batch(nb_client.get_story_list(batch, config))
+    process_batch(nb_client.get_story_list(batch), config)
     count_batches += 1
     logger.info('Finished adding story hashes to DB.')
     logger.info('Processed %s hashes in %s batches.', i, count_batches)

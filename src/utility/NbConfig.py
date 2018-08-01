@@ -25,11 +25,14 @@ class NbConfig:
         'SHOULD_PRUNE_STARRED': 'True'
     }
 
-    def __init__(self, config = None):
+    def __init__(self, config=None):
         if config is None:
             config = {}
         self.config = config
         self.set_defaults()
+
+    def __str__(self):
+        return str(self.defaults)
 
     def set_defaults(self):
         for key in self.defaults:
