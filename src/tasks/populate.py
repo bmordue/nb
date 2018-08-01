@@ -24,23 +24,26 @@ def populate():
 
     logger.info('Size of hashlist is %s', len(hashlist))
 
+    batch_size = config.get('BATCH_SIZE')
+    logger.debug('Batch size is %s', batch_size)
+
     i = 0
     count_batches = 0
     batch = []
     batchcounter = 0
     for ahash in hashlist:
         i += 1
-        if i > config.get('MAX_PARSE'):
+        if i >= int(config.get('MAX_PARSE')):
             logger.info('Reached MAX_PARSE (%s)', config.get('MAX_PARSE'))
             break
-        if batchcounter > config.get('BATCH_SIZE'):
-            process_batch(nb_client.get_story_list(batch))
+        if batchcounter >= batch_size:
+            process_batch(nb_client.get_story_list(batch, config))
             count_batches += 1
             batchcounter = 0
             batch = []
         batchcounter += 1
         batch.append(ahash)
-    process_batch(nb_client.get_story_list(batch))
+    process_batch(nb_client.get_story_list(batch, config))
     count_batches += 1
     logger.info('Finished adding story hashes to DB.')
     logger.info('Processed %s hashes in %s batches.', i, count_batches)
@@ -48,7 +51,7 @@ def populate():
 
 # Process a batch of hashes and add details to DB
 @statsd.timed('nb.populate.process_batch')
-def process_batch(story_list):
+def process_batch(story_list, config):
     db_client = client_factory.get_db_client()
     for story in story_list:
         if story['story_feed_id'] == config.get('NB_HN_FEED_ID'):
