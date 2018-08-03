@@ -1,5 +1,6 @@
 from datadog import statsd
 
+import time
 from utility import client_factory
 from utility import nb_logging
 
@@ -38,7 +39,7 @@ def populate():
             break
         if batchcounter >= batch_size:
 	    logger.debug('Process batch of %s', batchcounter)
-            process_batch(nb_client.get_story_list(batch), config)
+            process_batch_with_retries(nb_client.get_story_list(batch), config)
             count_batches += 1
             batchcounter = 0
             batch = []
@@ -49,6 +50,20 @@ def populate():
     logger.info('Finished adding story hashes to DB.')
     logger.info('Processed %s hashes in %s batches.', i, count_batches)
 
+@statsd.timed('nb.populate.process_batch_with_retries')
+def process_batch_with_retries(story_list, config):
+    process_batch(story_list, config)
+#    for backoff in backoff_gen():
+#	try:
+#	    process_batch(story_list, config)
+#	    break
+#	except e:
+#	    logger.debug('Failed to process batch for %s; backing off % sec', story_list, backoff)
+#	    time.sleep(backoff)
+
+def backoff_gen():
+    for i in range(0, 4):
+        yield 10*(i**2)
 
 # Process a batch of hashes and add details to DB
 @statsd.timed('nb.populate.process_batch')
@@ -60,7 +75,7 @@ def process_batch(story_list, config):
             db_client.add_story(story['story_hash'], story['story_date'], hnurl,
                                 story['story_permalink'])
             statsd.increment('nb.stories_added')
-    statsd.increment('nb.stories.batches_procssed')
+    statsd.increment('nb.stories.batches_processed')
     db_client.close_connection()
 
 def get_hn_url(content):
