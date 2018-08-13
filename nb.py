@@ -11,7 +11,6 @@ from utility.NbConfig import NbConfig
 from utility import client_factory
 from utility import nb_logging
 import rollbar
-from utility import constants
 
 patch_all()
 
