@@ -1,9 +1,0 @@
-argparse==1.4.0
-beautifulsoup4==4.6.1
-requests==2.19.0
-wsgiref==0.1.2
-MySQL-python==1.2.5
-pynamodb==3.3.0
-datadog==0.22.0
-ddtrace==0.12.1
-rollbar==0.14.1
