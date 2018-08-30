@@ -97,6 +97,7 @@ class MySqlClient(DbConnector):
         cursor.execute(insert_story_query, (nb_hash, added, comments_url, story_url))
         cursor.close()
         self.conn.commit()
+	logger.info('Added story (%s)', nb_hash)
 
     @statsd.timed(STATSD_PREFIX + 'list_stories_without_comment_count')
     def list_stories_without_comment_count(self):
@@ -114,6 +115,7 @@ class MySqlClient(DbConnector):
         cursor.execute(query, (count, comments_url))
         cursor.close()
         self.conn.commit()
+	logger.info('Added comment count for %s (%s)', hnurl, comments)
 
     def record_error(self, url, code, headers, body):
         pass

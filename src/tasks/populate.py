@@ -38,7 +38,7 @@ def populate():
             logger.info('Reached MAX_PARSE (%s)', config.get('MAX_PARSE'))
             break
         if batchcounter >= batch_size:
-	    logger.debug('Process batch of %s', batchcounter)
+	    logger.debug('Process batch of %s', batch_size)
             process_batch_with_retries(nb_client.get_story_list(batch), config)
             count_batches += 1
             batchcounter = 0
