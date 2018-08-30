@@ -61,7 +61,6 @@ class MySqlClient(DbConnector):
 
     def close_connection(self):
         self.conn.close()
-        logger.debug('Closed database connection')
 
     @statsd.timed(STATSD_PREFIX + 'list_stories_with_comments_fewer_than')
     def list_stories_with_comments_fewer_than(self, threshold):

@@ -4,7 +4,7 @@ class NbConfig:
     defaults = {
         'NB_ENDPOINT': 'https://newsblur.com',
         'NB_HN_FEED_ID': '5982259',
-        'MAX_PARSE': '40000', # max number of Newsblur starred stories to process
+        'MAX_PARSE': '40', # max number of Newsblur starred stories to process
         'BATCH_SIZE': '10', # how many batches to parse and enter in DB in one go
         'NB_USERNAME': os.getenv('NB_USERNAME','No username'),
         'NB_PASSWORD': os.getenv('NB_PASSWORD','No password'),

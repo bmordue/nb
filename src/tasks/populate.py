@@ -45,6 +45,7 @@ def populate():
             batch = []
         batchcounter += 1
         batch.append(ahash)
+    logger.debug('Process final batch of %s', len(batch))
     process_batch(nb_client.get_story_list(batch), config)
     count_batches += 1
     logger.info('Finished adding story hashes to DB.')
@@ -70,7 +71,7 @@ def backoff_gen():
 def process_batch(story_list, config):
     db_client = client_factory.get_db_client()
     for story in story_list:
-        if story['story_feed_id'] == config.get('NB_HN_FEED_ID'):
+        if story['story_feed_id'] == int(config.get('NB_HN_FEED_ID')):
             hnurl = get_hn_url(story['story_content'])
             db_client.add_story(story['story_hash'], story['story_date'], hnurl,
                                 story['story_permalink'])
