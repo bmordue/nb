@@ -9,6 +9,8 @@ if __name__ == "__main__":
     db_client = client_factory.get_db_client()
     db_client.ensure_config_table_exists()
     config = NbConfig({})
+    del config.config['NB_USERNAME']
+    del config.config['NB_PASSWORD']
     logger.info("Config to write: %s", config.config)
     db_client.write_config(config.config)
     config_read = db_client.read_config()
