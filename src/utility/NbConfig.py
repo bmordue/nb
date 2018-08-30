@@ -4,11 +4,7 @@ class NbConfig:
     defaults = {
         'NB_ENDPOINT': 'https://newsblur.com',
         'NB_HN_FEED_ID': '5982259',
-        'DB_HOST': os.getenv('DB_HOST','not set'),
-        'DB_USER': os.getenv('DB_USER','No username'),
-        'DB_PASS': os.getenv('DB_PASS','No password'),
-        'DB_NAME': 'nb',
-        'MAX_PARSE': '40000', # max number of Newsblur starred stories to process
+        'MAX_PARSE': '40', # max number of Newsblur starred stories to process
         'BATCH_SIZE': '10', # how many batches to parse and enter in DB in one go
         'NB_USERNAME': os.getenv('NB_USERNAME','No username'),
         'NB_PASSWORD': os.getenv('NB_PASSWORD','No password'),
@@ -25,11 +21,14 @@ class NbConfig:
         'SHOULD_PRUNE_STARRED': 'True'
     }
 
-    def __init__(self, config = None):
+    def __init__(self, config=None):
         if config is None:
             config = {}
         self.config = config
         self.set_defaults()
+
+    def __str__(self):
+        return str(self.defaults)
 
     def set_defaults(self):
         for key in self.defaults:

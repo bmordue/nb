@@ -1,5 +1,5 @@
 from pynamodb.models import Model
-from pynamodb.attributes import *
+from pynamodb.attributes import NumberAttribute, UnicodeAttribute
 
 
 class StoryModel(Model):

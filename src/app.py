@@ -22,6 +22,8 @@ if __name__ == "__main__":
     db_client.ensure_config_table_exists()
     config = db_client.read_config()
 
+    logger.debug('Config: %s', config)
+
     statsd.event("Starting nb", "Parse up to {0} stories in batches of {1}"
                  .format(config.get('MAX_PARSE'), config.get('BATCH_SIZE')))
 
