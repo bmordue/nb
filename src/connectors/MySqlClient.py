@@ -105,7 +105,7 @@ class MySqlClient(DbConnector):
         cursor = self.conn.cursor()
         cursor.execute(query)
         rows = cursor.fetchall()
-	cursor.close()
+        cursor.close()
         return list(rows)
 
     @statsd.timed(STATSD_PREFIX + 'add_comment_count')

@@ -6,16 +6,15 @@ from tasks.populate import populate
 from tasks.add_comment_counts import add_comment_counts
 from tasks.prune import prune_starred
 from tasks.add_domains import add_domains
-from utility.NbConfig import NbConfig
 
 from utility import client_factory
 from utility import nb_logging
 import rollbar
 
-patch_all()
+# patch_all()
 
 rollbar.init('00b402fc0da54ed1af8687d4c4389911')
-logger = nb_logging.setup_logger('NB')
+logger = nb_logging.setup_logger('app')
 
 if __name__ == "__main__":
     db_client = client_factory.get_db_client()
