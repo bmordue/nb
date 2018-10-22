@@ -1,6 +1,7 @@
 import json
 from time import sleep
 
+import os
 import requests
 import requests.exceptions
 import rollbar
@@ -15,13 +16,13 @@ logger = nb_logging.setup_logger('NewsblurConnector')
 
 
 class NewsblurConnector:
-
     def __init__(self, config):
         self.cookies = None
         self.config = config
         self.verify = config.get('VERIFY')
         self.nb_endpoint = config.get('NB_ENDPOINT')
-        self.credentials = {'username': config.get('NB_USERNAME'), 'password': config.get('NB_PASSWORD')}
+        self.credentials = {'username': os.getenv('NB_USERNAME'),
+                            'password': os.getenv('NB_PASSWORD')}
 
     def connect(self):
         """ make connection """
@@ -35,14 +36,14 @@ class NewsblurConnector:
         hashes = requests.get(self.nb_endpoint + '/reader/starred_story_hashes',
                               cookies=self.cookies)
         statsd.increment('nb.http_requests.get')
-	try:
+        try:
             return hashes.json()['starred_story_hashes']
-	except JSONDecodeError as e:
-	    rollbar.report_exc_info()
-	    msg = 'Failed to decode JSON'
-	    logger.error(msg)
-	    logger.error(e)
-	    statsd.event(msg, e.message, alert_type='error')
+        except JSONDecodeError as e:
+            rollbar.report_exc_info()
+            msg = 'Failed to decode JSON'
+            logger.error(msg)
+            logger.error(e)
+            statsd.event(msg, e.message, alert_type='error')
 
     @statsd.timed('nb.NewsblurConnector.get_story_list')
     def get_story_list(self, batch):
@@ -50,14 +51,14 @@ class NewsblurConnector:
         req_str = self.nb_endpoint + '/reader/starred_stories?'
         for a_hash in batch:
             req_str += 'h=' + a_hash + '&'
-	stories = {}
-	try:
+        stories = {}
+        try:
             stories = requests.get(req_str, cookies=self.cookies)
-	except requests.exceptions.ConnectionError as e:
+        except requests.exceptions.ConnectionError as e:
             rollbar.report_exc_info()
-	    msg = 'Failed to get stories'
+            msg = 'Failed to get stories'
             logger.error(msg)
-	    logger.debug('Request string: %s', req_str)
+            logger.debug('Request string: %s', req_str)
             logger.error(e)
             statsd.event(msg, e.message, alert_type='error')
             logger.debug(stories.text)
@@ -67,7 +68,7 @@ class NewsblurConnector:
             story_list = json.loads(stories.text)['stories']
         except ValueError as e:
             rollbar.report_exc_info()
-	    msg = 'Failed to parse stories response'
+            msg = 'Failed to parse stories response'
             logger.error(msg)
             logger.error(e)
             statsd.event(msg, e.message, alert_type='error')
@@ -79,7 +80,7 @@ class NewsblurConnector:
         req = requests.Request('GET', hnurl, cookies=self.cookies)
         resp = self.request_with_backoff(req)
         if resp is None:
-            return 0
+            return None
         story_text = self.request_with_backoff(req).text
         return self.parse_story(story_text)
 
