@@ -1,5 +1,3 @@
-import os
-
 class NbConfig:
     defaults = {
         'NB_ENDPOINT': 'https://newsblur.com',
