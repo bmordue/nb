@@ -7,3 +7,5 @@ pynamodb==3.3.1
 datadog==0.23.0
 ddtrace==0.15.0
 rollbar==0.14.5
+schedule==0.5.0
+
