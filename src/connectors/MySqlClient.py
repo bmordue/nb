@@ -6,6 +6,7 @@ from ddtrace import patch_all
 
 from connectors.DbConnector import DbConnector
 from utility import nb_logging
+from utility.NbConfig import NbConfig
 
 logger = nb_logging.setup_logger('MySqlClient')
 patch_all()

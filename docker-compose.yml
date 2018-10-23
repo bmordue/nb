@@ -1,4 +1,4 @@
-version: '3'
+version: '3.5'
 secrets:
   DB_HOST:
     external: true
@@ -14,11 +14,12 @@ secrets:
     external: true
 services:
   nb:
+    image: nb:latest
     build: ./src
     secrets:
-      - DB_HOST:
-      - DB_NAME:
-      - DB_USER:
-      - DB_PASS:
-      - NB_USERNAME:
-      - NB_PASSWORD:
+      - DB_HOST
+      - DB_NAME
+      - DB_USER
+      - DB_PASS
+      - NB_USERNAME
+      - NB_PASSWORD
