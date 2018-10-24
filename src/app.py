@@ -58,9 +58,9 @@ def periodic_prune_starred():
 if __name__ == '__main__':
     logger.info('Started')
 
-    schedule.every().hour.do(periodic_populate())
-    schedule.every().hour.do(periodic_add_comment_counts())
-    schedule.every().day.at('23:00').do(periodic_prune_starred())
+    schedule.every().hour.do(periodic_populate)
+    schedule.every().hour.do(periodic_add_comment_counts)
+    schedule.every().day.at('23:00').do(periodic_prune_starred)
 
     while True:
         logger.info('Run pending scheduled jobs')
