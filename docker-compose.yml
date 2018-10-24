@@ -14,7 +14,7 @@ secrets:
     external: true
 services:
   nb:
-    image: nb:8da70de
+    image: nb:latest
     build: ./src
     secrets:
       - DB_HOST
