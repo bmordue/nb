@@ -15,6 +15,8 @@ secrets:
 services:
   nb:
     image: nb:latest
+    deploy:
+      replicas: 3
     build: ./src
     secrets:
       - DB_HOST
