@@ -29,13 +29,13 @@ def periodic_populate():
     if 'True' == config.get('SHOULD_POPULATE'):
         logger.info('Running scheduled populate task')
         populate()
-        logger.info('Finished scheduled populate task');
+        logger.info('Finished scheduled populate task')
     else:
         logger.info('SHOULD_POPULATE is %s; not running populate task'.format(config.get('SHOULD_POPULATE')))
     if 'True' == config.get('SHOULD_ADD_DOMAINS'):
-        logger.info('Running scheduled add_domains task');
+        logger.info('Running scheduled add_domains task')
         add_domains()
-        logger.info('Finished scheduled add_domains task');
+        logger.info('Finished scheduled add_domains task')
     else:
         logger.info('SHOULD_ADD_DOMAINS is %s; not running add_domains task'.format(config.get('SHOULD_ADD_DOMAINS')))
 
