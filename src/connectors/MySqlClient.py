@@ -21,6 +21,8 @@ class MySqlClient(DbConnector):
         self.password = password
         self.db_name = db_name
 
+	logger.info("Attempt to connect to DB %s on %s as user %s", db_name, host, user)
+
         self.conn = MySQLdb.connect(host=self.host,
                                     user=self.user,
                                     passwd=self.password,
@@ -115,7 +117,7 @@ class MySqlClient(DbConnector):
         cursor.execute(query, (count, comments_url))
         cursor.close()
         self.conn.commit()
-	logger.info('Added comment count for %s (%s)', hnurl, comments)
+	logger.info('Added comment count for %s (%s)', comments_url, count)
 
     def record_error(self, url, code, headers, body):
         pass

@@ -1,13 +1,12 @@
 import json
-from time import sleep
 
-import os
 import requests
 import requests.exceptions
 import rollbar
 from bs4 import BeautifulSoup
 from datadog import statsd
 from ddtrace import patch
+from time import sleep
 
 from utility import nb_logging
 
@@ -16,16 +15,18 @@ logger = nb_logging.setup_logger('NewsblurConnector')
 
 
 class NewsblurConnector:
-    def __init__(self, config):
+
+    def __init__(self, config, username, password):
         self.cookies = None
         self.config = config
         self.verify = config.get('VERIFY')
         self.nb_endpoint = config.get('NB_ENDPOINT')
-        self.credentials = {'username': os.getenv('NB_USERNAME'),
-                            'password': os.getenv('NB_PASSWORD')}
 
-    def connect(self):
-        """ make connection """
+        self.credentials = {'username': username, 'password': password}
+
+    @statsd.timed('nb.NewsblurConnector.login')
+    def login(self):
+        """ log in and save cookies """
         r = requests.post(self.nb_endpoint + '/api/login', self.credentials)
         statsd.increment('nb.http_requests.post')
         self.cookies = r.cookies

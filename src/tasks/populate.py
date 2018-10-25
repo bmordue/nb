@@ -19,8 +19,8 @@ def populate():
     config = db_client.read_config()
     db_client.close_connection()
 
-    nb_client = NewsblurConnector(config)
-    nb_client.connect()
+    nb_client = client_factory.get_newsblur_client()
+    nb_client.login()
     hashlist = nb_client.get_nb_hash_list()
 
     logger.info('Size of hashlist is %s', len(hashlist))

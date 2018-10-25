@@ -15,12 +15,12 @@ def add_comment_counts():
     db_client = client_factory.get_db_client()
     rows = db_client.list_stories_without_comment_count()
     logger.debug('Found %s rows', len(rows))
-    nb_client = NewsblurConnector(db_client.read_config())
-    nb_client.connect()
+    nb_client = client_factory.get_newsblur_client()
+    nb_client.login()
 
     for row in rows:
-#        url = row.hnurl
-	url = row[0]
+        #        url = row.hnurl
+        url = row[0]
         count = nb_client.get_comment_count(url)
         logger.debug("Count for %s is %s", url, count)
         if count is not None:
