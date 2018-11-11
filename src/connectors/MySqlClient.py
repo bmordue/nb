@@ -44,7 +44,7 @@ class MySqlClient(DbConnector):
 
     @statsd.timed(STATSD_PREFIX + 'list_urls')
     def list_urls(self):
-        cursor = self.execute_wrapper_wrapper("SELECT hash, url FROM stories")
+        cursor = self.execute_wrapper("SELECT hash, url FROM stories")
         rows = cursor.fetchall()
         cursor.close()
         logger.info('Found %s results.', len(rows))
@@ -139,7 +139,7 @@ class MySqlClient(DbConnector):
         cursor.close()
         self.conn.commit()
 
-    def execute_wrapper(self, query_str, query_params):
+    def execute_wrapper(self, query_str, query_params=None):
         cursor = self.conn.cursor()
         try:
             cursor.execute(query_str, query_params)
