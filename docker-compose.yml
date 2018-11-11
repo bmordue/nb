@@ -26,3 +26,6 @@ services:
       - NB_USERNAME
       - NB_PASSWORD
 
+networks:
+  monitoring:
+    external: true
