@@ -3,6 +3,7 @@ import warnings
 import MySQLdb
 from datadog import statsd
 from ddtrace import patch_all
+from ddtrace import tracer
 
 from connectors.DbConnector import DbConnector
 from utility import nb_logging
@@ -12,6 +13,8 @@ import rollbar
 
 logger = nb_logging.setup_logger('MySqlClient')
 patch_all()
+tracer.configure(hostname = 'dd_agent')
+
 STATSD_PREFIX = 'nb.MySqlClient.'
 
 

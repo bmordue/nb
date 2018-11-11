@@ -6,11 +6,14 @@ import rollbar
 from bs4 import BeautifulSoup
 from datadog import statsd
 from ddtrace import patch
+from ddtrace import tracer
 from time import sleep
 
 from utility import nb_logging
 
 patch(requests=True)
+tracer.configure(hostname = 'dd_agent')
+
 logger = nb_logging.setup_logger('NewsblurConnector')
 
 
