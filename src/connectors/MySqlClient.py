@@ -68,7 +68,7 @@ class MySqlClient(DbConnector):
 
     @statsd.timed(STATSD_PREFIX + 'list_stories_with_comments_fewer_than')
     def list_stories_with_comments_fewer_than(self, threshold):
-        cursor = self.execute_wrapper_wrapper("SELECT hash FROM stories WHERE comments < %s AND starred = 1", (threshold,))
+        cursor = self.execute_wrapper("SELECT hash FROM stories WHERE comments < %s AND starred = 1", (threshold,))
         rows = cursor.fetchall()
         cursor.close()
         logger.info('Found %s starred stories with fewer than %s comments', len(rows), threshold)
