@@ -6,11 +6,13 @@ import rollbar
 from bs4 import BeautifulSoup
 from datadog import statsd
 from ddtrace import patch
+from ddtrace import tracer
 from time import sleep
 
 from utility import nb_logging
 
 patch(requests=True)
+
 logger = nb_logging.setup_logger('NewsblurConnector')
 
 
@@ -39,11 +41,12 @@ class NewsblurConnector:
         statsd.increment('nb.http_requests.get')
         try:
             return hashes.json()['starred_story_hashes']
-        except JSONDecodeError as e:
+        except ValueError as e:
             rollbar.report_exc_info()
             msg = 'Failed to decode JSON'
             logger.error(msg)
             logger.error(e)
+            logger.debug(hashes)
             statsd.event(msg, e.message, alert_type='error')
 
     @statsd.timed('nb.NewsblurConnector.get_story_list')

@@ -2,6 +2,7 @@ import rollbar
 import schedule
 import time
 from ddtrace import patch_all
+from ddtrace import tracer
 
 from tasks.add_comment_counts import add_comment_counts
 from tasks.add_domains import add_domains
