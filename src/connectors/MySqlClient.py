@@ -145,6 +145,6 @@ class MySqlClient(DbConnector):
         cursor = self.conn.cursor()
         try:
             cursor.execute(query_str, query_params)
-        except:
+        except MySQLError:
             rollbar.report_exc_info()
         return cursor
