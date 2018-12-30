@@ -12,7 +12,6 @@ from time import sleep
 from utility import nb_logging
 
 patch(requests=True)
-tracer.configure(hostname = 'dd_agent')
 
 logger = nb_logging.setup_logger('NewsblurConnector')
 

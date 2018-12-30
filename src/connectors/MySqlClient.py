@@ -13,7 +13,6 @@ import rollbar
 
 logger = nb_logging.setup_logger('MySqlClient')
 patch_all()
-tracer.configure(hostname = 'dd_agent')
 
 STATSD_PREFIX = 'nb.MySqlClient.'
 

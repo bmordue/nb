@@ -14,8 +14,6 @@ from utility import nb_logging
 
 patch_all()
 
-tracer.configure(hostname = 'dd_agent')
-
 rollbar.init('00b402fc0da54ed1af8687d4c4389911')
 logger = nb_logging.setup_logger('app')
 
