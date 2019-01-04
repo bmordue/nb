@@ -107,7 +107,6 @@ class NewsblurConnector:
 
         return bool(story_hash in hashlist)
 
-    # TODO: move statsd bucket names to constants.py
     @statsd.timed('nb.NewsblurConnector.remove_star_with_backoff')
     def remove_star_with_backoff(self, story_hash):
         unstar_url = self.nb_endpoint + '/reader/mark_story_hash_as_unstarred'
