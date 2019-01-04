@@ -36,9 +36,11 @@ class NewsblurConnector:
     @statsd.timed('nb.NewsblurConnector.get_nb_hash_list')
     def get_nb_hash_list(self):
         """ get a list of story identifiers (hashes) from NewsBlur """
-        hashes = requests.get(self.nb_endpoint + '/reader/starred_story_hashes',
+
+	hashes_req = requests.Request('GET', self.nb_endpoint + '/reader/starred_story_hashes'
+				      cookies=self.cookies)
+	hashes = self.request_with_backoff(hashes_req)
                               cookies=self.cookies)
-        statsd.increment('nb.http_requests.get')
         try:
             return hashes.json()['starred_story_hashes']
         except ValueError as e:
@@ -48,6 +50,7 @@ class NewsblurConnector:
             logger.error(e)
             logger.debug(hashes)
             statsd.event(msg, e.message, alert_type='error')
+	return []
 
     @statsd.timed('nb.NewsblurConnector.get_story_list')
     def get_story_list(self, batch):
