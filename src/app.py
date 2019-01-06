@@ -17,6 +17,8 @@ patch_all()
 rollbar.init('00b402fc0da54ed1af8687d4c4389911')
 logger = nb_logging.setup_logger('app')
 
+from datadog import initialize
+initialize(statsd_host='dd_agent')
 
 def get_config(task):
     db_client = client_factory.get_db_client()

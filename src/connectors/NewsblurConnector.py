@@ -37,10 +37,10 @@ class NewsblurConnector:
     def get_nb_hash_list(self):
         """ get a list of story identifiers (hashes) from NewsBlur """
 
-	hashes_req = requests.Request('GET', self.nb_endpoint + '/reader/starred_story_hashes'
+	hashes_req = requests.Request('GET', self.nb_endpoint + '/reader/starred_story_hashes',
 				      cookies=self.cookies)
 	hashes = self.request_with_backoff(hashes_req)
-                              cookies=self.cookies)
+
         try:
             return hashes.json()['starred_story_hashes']
         except ValueError as e:
