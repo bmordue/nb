@@ -1,6 +1,6 @@
 workflow "Build and push docker image" {
   on = "push"
-  resolves = ["Build and tag"]
+  resolves = ["Push to Docker Hub"]
 }
 
 action "Build and tag" {
