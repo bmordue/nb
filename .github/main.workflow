@@ -1,27 +1,21 @@
-workflow "Build container" {
+workflow "Build and push docker image" {
   on = "push"
   resolves = ["GitHub Action for Docker-1"]
 }
 
-action "GitHub Action for Docker" {
+action "Build and tag" {
   uses = "actions/docker/cli@76ff57a6c3d817840574a98950b0c7bc4e8a13a8"
   args = "build -t bmordue/nb -f src/Dockerfile ./src"
 }
 
-action "Docker Tag" {
-  uses = "actions/docker/tag@76ff57a6c3d817840574a98950b0c7bc4e8a13a8"
-  needs = ["GitHub Action for Docker"]
-  args = "-l"
-}
-
-action "Docker Registry" {
+action "Log in to Docker Hub" {
   uses = "actions/docker/login@76ff57a6c3d817840574a98950b0c7bc4e8a13a8"
-  needs = ["Docker Tag"]
+  needs = ["Build and tag"]
   secrets = ["DOCKER_USERNAME", "DOCKER_PASSWORD"]
 }
 
-action "GitHub Action for Docker-1" {
+action "Push to Docker Hub" {
   uses = "actions/docker/cli@76ff57a6c3d817840574a98950b0c7bc4e8a13a8"
-  needs = ["Docker Registry"]
+  needs = ["Docker in to Docker Hub"]
   args = "push"
 }
