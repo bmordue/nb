@@ -11,6 +11,7 @@ action "GitHub Action for Docker" {
 action "Docker Tag" {
   uses = "actions/docker/tag@76ff57a6c3d817840574a98950b0c7bc4e8a13a8"
   needs = ["GitHub Action for Docker"]
+  args = "-l"
 }
 
 action "Docker Registry" {
