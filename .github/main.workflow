@@ -5,7 +5,7 @@ workflow "Build container" {
 
 action "GitHub Action for Docker" {
   uses = "actions/docker/cli@76ff57a6c3d817840574a98950b0c7bc4e8a13a8"
-  args = "build -t bmordue/nb ."
+  args = "build -t bmordue/nb -f src/Dockerfile ./src"
 }
 
 action "Docker Tag" {
