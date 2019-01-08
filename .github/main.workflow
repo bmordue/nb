@@ -1,6 +1,6 @@
 workflow "Build and push docker image" {
   on = "push"
-  resolves = ["GitHub Action for Docker-1"]
+  resolves = ["Build and tag"]
 }
 
 action "Build and tag" {
@@ -16,6 +16,6 @@ action "Log in to Docker Hub" {
 
 action "Push to Docker Hub" {
   uses = "actions/docker/cli@76ff57a6c3d817840574a98950b0c7bc4e8a13a8"
-  needs = ["Docker in to Docker Hub"]
+  needs = ["Log in to Docker Hub"]
   args = "push"
 }
