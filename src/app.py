@@ -71,5 +71,9 @@ if __name__ == '__main__':
     schedule.every().day.at('23:00').do(periodic_prune_starred)
 
     while True:
-        schedule.run_pending()
+        try:
+            schedule.run_pending()
+        except Exception as e:
+            rollbar.report_exc_info()
+            raise e
         time.sleep(60)
