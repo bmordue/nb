@@ -59,8 +59,9 @@ class NewsblurConnector:
         for a_hash in batch:
             req_str += 'h=' + a_hash + '&'
         stories = {}
+	stories_req = requests.Request('GET', req_str, cookies=self.cookies)
         try:
-            stories = requests.get(req_str, cookies=self.cookies)
+            stories = self.request_with_backoff(stories_req)
         except requests.exceptions.ConnectionError as e:
             rollbar.report_exc_info()
             msg = 'Failed to get stories'
@@ -100,8 +101,9 @@ class NewsblurConnector:
 
     @statsd.timed('nb.NewsblurConnector.check_if_starred')
     def check_if_starred(self, story_hash):
-        hashes = requests.get(self.nb_endpoint + '/reader/starred_story_hashes',
-                              cookies=self.cookies)
+	starred_req = requests.Request('GET', self.nb_endpoint + '/reader/starred_story_hashes', 
+                                       cookies=self.cookies)
+        hashes = self.request_with_backoff(starred_req)
         statsd.increment('nb.http_requests.get')
         hashlist = hashes.json()['starred_story_hashes']
 
@@ -114,7 +116,7 @@ class NewsblurConnector:
                                cookies=self.cookies)
         return bool(self.request_with_backoff(req) is not None)
 
-    @statsd.timed('nb.NewsblurConnector.remove_star_with_backoff')
+    @statsd.timed('nb.NewsblurConnector.request_with_backoff')
     def request_with_backoff(self, req):
         sleep(float(self.config.get('POLITE_WAIT')))
         backoff = self.config.get('BACKOFF_START')
