@@ -136,12 +136,14 @@ class NewsblurConnector:
                         backoff = backoff * self.config.get('BACKOFF_FACTOR')
                         resp = session.send(prepared_req)
                         statsd.increment('nb.http_requests.count')
+            		statsd.increment('nb.http_requests.status_' + str(resp.status_code))
                     else:
                         logger.warn("Giving up after %s seconds for %s", backoff, req.url)
                         return None
                 elif resp.status_code in [403, 520]:
                     logger.warn("%s response, skipping %s and waiting %ss", resp.status_code,
                                 req.url, self.config.get('BACKOFF_START'))
+		    sleep(self.config.get('BACKOFF_START'))
                     return None
                 else:
                     logger.error("Request for %s returned unhandled %s response",
