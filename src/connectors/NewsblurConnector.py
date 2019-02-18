@@ -6,11 +6,13 @@ import rollbar
 from bs4 import BeautifulSoup
 from datadog import statsd
 from ddtrace import patch
+from ddtrace import tracer
 from time import sleep
 
 from utility import nb_logging
 
 patch(requests=True)
+
 logger = nb_logging.setup_logger('NewsblurConnector')
 
 
@@ -34,17 +36,21 @@ class NewsblurConnector:
     @statsd.timed('nb.NewsblurConnector.get_nb_hash_list')
     def get_nb_hash_list(self):
         """ get a list of story identifiers (hashes) from NewsBlur """
-        hashes = requests.get(self.nb_endpoint + '/reader/starred_story_hashes',
-                              cookies=self.cookies)
-        statsd.increment('nb.http_requests.get')
+
+	hashes_req = requests.Request('GET', self.nb_endpoint + '/reader/starred_story_hashes',
+				      cookies=self.cookies)
+	hashes = self.request_with_backoff(hashes_req)
+
         try:
             return hashes.json()['starred_story_hashes']
-        except JSONDecodeError as e:
+        except ValueError as e:
             rollbar.report_exc_info()
             msg = 'Failed to decode JSON'
             logger.error(msg)
             logger.error(e)
+            logger.debug(hashes)
             statsd.event(msg, e.message, alert_type='error')
+	return []
 
     @statsd.timed('nb.NewsblurConnector.get_story_list')
     def get_story_list(self, batch):
@@ -53,8 +59,9 @@ class NewsblurConnector:
         for a_hash in batch:
             req_str += 'h=' + a_hash + '&'
         stories = {}
+	stories_req = requests.Request('GET', req_str, cookies=self.cookies)
         try:
-            stories = requests.get(req_str, cookies=self.cookies)
+            stories = self.request_with_backoff(stories_req)
         except requests.exceptions.ConnectionError as e:
             rollbar.report_exc_info()
             msg = 'Failed to get stories'
@@ -94,14 +101,14 @@ class NewsblurConnector:
 
     @statsd.timed('nb.NewsblurConnector.check_if_starred')
     def check_if_starred(self, story_hash):
-        hashes = requests.get(self.nb_endpoint + '/reader/starred_story_hashes',
-                              cookies=self.cookies)
+	starred_req = requests.Request('GET', self.nb_endpoint + '/reader/starred_story_hashes', 
+                                       cookies=self.cookies)
+        hashes = self.request_with_backoff(starred_req)
         statsd.increment('nb.http_requests.get')
         hashlist = hashes.json()['starred_story_hashes']
 
         return bool(story_hash in hashlist)
 
-    # TODO: move statsd bucket names to constants.py
     @statsd.timed('nb.NewsblurConnector.remove_star_with_backoff')
     def remove_star_with_backoff(self, story_hash):
         unstar_url = self.nb_endpoint + '/reader/mark_story_hash_as_unstarred'
@@ -109,7 +116,7 @@ class NewsblurConnector:
                                cookies=self.cookies)
         return bool(self.request_with_backoff(req) is not None)
 
-    @statsd.timed('nb.NewsblurConnector.remove_star_with_backoff')
+    @statsd.timed('nb.NewsblurConnector.request_with_backoff')
     def request_with_backoff(self, req):
         sleep(float(self.config.get('POLITE_WAIT')))
         backoff = self.config.get('BACKOFF_START')
@@ -129,12 +136,14 @@ class NewsblurConnector:
                         backoff = backoff * self.config.get('BACKOFF_FACTOR')
                         resp = session.send(prepared_req)
                         statsd.increment('nb.http_requests.count')
+            		statsd.increment('nb.http_requests.status_' + str(resp.status_code))
                     else:
                         logger.warn("Giving up after %s seconds for %s", backoff, req.url)
                         return None
                 elif resp.status_code in [403, 520]:
                     logger.warn("%s response, skipping %s and waiting %ss", resp.status_code,
                                 req.url, self.config.get('BACKOFF_START'))
+		    sleep(self.config.get('BACKOFF_START'))
                     return None
                 else:
                     logger.error("Request for %s returned unhandled %s response",

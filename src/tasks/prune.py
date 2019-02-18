@@ -11,7 +11,7 @@ def prune_starred():
     db_client = client_factory.get_db_client()
     config = db_client.read_config()
     rows = db_client.list_stories_with_comments_fewer_than(config.get('COMMENTS_THRESHOLD'))
-    nb_client = NewsblurConnector(config)
+    nb_client = client_factory.get_newsblur_client()
     nb_client.login()
 
     logger.info('Remove all stars on stories with fewer than %s comments', config.get('COMMENTS_THRESHOLD'))
