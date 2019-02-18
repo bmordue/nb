@@ -36,7 +36,7 @@ def populate():
     count_batches = 0
     while i < int(config.get('MAX_PARSE')):
         batch = db_client.read_hashes(batch_size)
-        if len(batch) == 0:
+        if not batch:
             break
         count_batches += 1
         i += len(batch)
