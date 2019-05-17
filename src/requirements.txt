@@ -1,5 +1,5 @@
 beautifulsoup4==4.7.1
-requests==2.21.0
+requests==2.22.0
 MySQL-python==1.2.5
 pynamodb==3.3.3
 datadog==0.27.0
