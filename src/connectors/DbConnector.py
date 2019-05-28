@@ -40,3 +40,15 @@ class DbConnector:
 
     def read_config(self):
         raise NotImplementedError
+
+    def add_hashes(self, hashes):
+        raise NotImplementedError
+
+    def read_hashes(self, count):
+        raise NotImplementedError
+    
+    def mark_story_done(self, story_hash):
+        raise NotImplementedError
+
+    def list_comment_count_update_candidates(self):
+        raise NotImplementedError

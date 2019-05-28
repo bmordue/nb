@@ -96,7 +96,7 @@ class MySqlClient(DbConnector):
         cursor = self.execute_wrapper(insert_story_query, (nb_hash, added, comments_url, story_url))
         cursor.close()
         self.conn.commit()
-	logger.info('Added story (%s)', nb_hash)
+        logger.info('Added story (%s)', nb_hash)
 
     @statsd.timed(STATSD_PREFIX + 'list_stories_without_comment_count')
     def list_stories_without_comment_count(self):
@@ -112,7 +112,7 @@ class MySqlClient(DbConnector):
         cursor = self.execute_wrapper(query, (count, comments_url))
         cursor.close()
         self.conn.commit()
-	logger.info('Added comment count for %s (%s)', comments_url, count)
+        logger.info('Added comment count for %s (%s)', comments_url, count)
 
     def record_error(self, url, code, headers, body):
         pass
@@ -140,6 +140,41 @@ class MySqlClient(DbConnector):
             cursor = self.execute_wrapper(query, (key, config[key]))
         cursor.close()
         self.conn.commit()
+
+    @statsd.timed(STATSD_PREFIX + 'add_hashes')
+    def add_hashes(self, hashes):
+        query = '''REPLACE INTO story_hashes VALUES (%s)'''
+        cursor = self.conn.cursor()
+        for a_hash in hashes:
+            cursor.execute(query, a_hash)
+        cursor.close()
+        self.conn.commit()
+
+    @statsd.timed(STATSD_PREFIX + 'read_hashes')
+    def read_hashes(self, count):
+        query = '''SELECT * FROM story_hashes WHERE processed <> 1 LIMIT %s'''
+        cursor = self.conn.cursor()
+        rows = cursor.execute(query, count)
+        cursor.close()
+        return rows
+
+    @statsd.timed(STATSD_PREFIX + 'mark_story_done')
+    def mark_story_done(self, story_hash):
+        query = '''UPDATE story_hashes SET processed = 1 WHERE hash = %s'''
+        cursor = self.conn.cursor()
+        cursor.execute(query, story_hash)
+        cursor.close()
+        self.conn.commit()
+
+    @statsd.timed(STATSD_PREFIX + 'list_comment_count_update_candidates')
+    def list_comment_count_update_candidates(self):
+        # modified - added < 7 days (comment window) AND now - modified > 1 hr (update interval)
+        query = '''SELECT hnurl FROM stories WHERE comments IS NULL'''
+        cursor = self.conn.cursor()
+        cursor.execute(query)
+        rows = cursor.fetchall()
+        cursor.close()
+        return list(rows)
 
     def execute_wrapper(self, query_str, query_params=None):
         cursor = self.conn.cursor()
