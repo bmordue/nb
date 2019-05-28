@@ -14,7 +14,6 @@ def update_comment_counts():
     logger.info('Update comment counts to stories in DB')
     db_client = client_factory.get_db_client()
 
-    # TODO: write this method in db_client
     rows = db_client.list_comment_count_update_candidates()
 
     logger.debug('Found %s candidates for updating comment count', len(rows))
