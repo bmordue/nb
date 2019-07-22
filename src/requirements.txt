@@ -1,4 +1,4 @@
-beautifulsoup4==4.7.1
+beautifulsoup4==4.8.0
 requests==2.22.0
 MySQL-python==1.2.5
 pynamodb==3.3.3
