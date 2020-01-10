@@ -1,4 +1,4 @@
-from connectors.MySqlClient import MySqlClient
+from connectors.SqliteClient import SqliteClient
 from connectors.NewsblurConnector import NewsblurConnector
 from utility import nb_logging
 import os
@@ -14,12 +14,8 @@ def get_secret(name):
 
 
 def get_db_client():
-    host = get_secret('DB_HOST')
-    user = get_secret('DB_USER')
-    password = get_secret('DB_PASS')
-    db_name = get_secret('DB_NAME')
-    logger.debug('host: {}'.format(host))
-    return MySqlClient(host=host, user=user, password=password, db_name=db_name)
+    logger.debug('DB: sqlite file')
+    return SqliteClient()
 
 
 def get_newsblur_client():
