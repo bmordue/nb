@@ -5,13 +5,9 @@ import requests.exceptions
 import rollbar
 from bs4 import BeautifulSoup
 from datadog import statsd
-from ddtrace import patch
-from ddtrace import tracer
 from time import sleep
 
 from utility import nb_logging
-
-patch(requests=True)
 
 logger = nb_logging.setup_logger('NewsblurConnector')
 
@@ -37,9 +33,9 @@ class NewsblurConnector:
     def get_nb_hash_list(self):
         """ get a list of story identifiers (hashes) from NewsBlur """
 
-	hashes_req = requests.Request('GET', self.nb_endpoint + '/reader/starred_story_hashes',
+        hashes_req = requests.Request('GET', self.nb_endpoint + '/reader/starred_story_hashes',
 				      cookies=self.cookies)
-	hashes = self.request_with_backoff(hashes_req)
+        hashes = self.request_with_backoff(hashes_req)
 
         try:
             return hashes.json()['starred_story_hashes']
@@ -50,7 +46,7 @@ class NewsblurConnector:
             logger.error(e)
             logger.debug(hashes)
             statsd.event(msg, e.message, alert_type='error')
-	return []
+        return []
 
     @statsd.timed('nb.NewsblurConnector.get_story_list')
     def get_story_list(self, batch):

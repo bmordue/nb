@@ -1,8 +1,6 @@
 import rollbar
 import schedule
 import time
-from ddtrace import patch_all
-from ddtrace import tracer
 
 from tasks.add_comment_counts import add_comment_counts
 from tasks.add_domains import add_domains
@@ -11,8 +9,6 @@ from tasks.prune import prune_starred
 
 from utility import client_factory
 from utility import nb_logging
-
-patch_all()
 
 rollbar.init('00b402fc0da54ed1af8687d4c4389911')
 logger = nb_logging.setup_logger('app')
