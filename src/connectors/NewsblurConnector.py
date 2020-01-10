@@ -33,8 +33,7 @@ class NewsblurConnector:
     def get_nb_hash_list(self):
         """ get a list of story identifiers (hashes) from NewsBlur """
 
-        hashes_req = requests.Request('GET', self.nb_endpoint + '/reader/starred_story_hashes',
-				      cookies=self.cookies)
+        hashes_req = requests.Request('GET', self.nb_endpoint + '/reader/starred_story_hashes', cookies=self.cookies)
         hashes = self.request_with_backoff(hashes_req)
 
         try:
@@ -55,7 +54,7 @@ class NewsblurConnector:
         for a_hash in batch:
             req_str += 'h=' + a_hash + '&'
         stories = {}
-	stories_req = requests.Request('GET', req_str, cookies=self.cookies)
+        stories_req = requests.Request('GET', req_str, cookies=self.cookies)
         try:
             stories = self.request_with_backoff(stories_req)
         except requests.exceptions.ConnectionError as e:
@@ -97,7 +96,7 @@ class NewsblurConnector:
 
     @statsd.timed('nb.NewsblurConnector.check_if_starred')
     def check_if_starred(self, story_hash):
-	starred_req = requests.Request('GET', self.nb_endpoint + '/reader/starred_story_hashes', 
+        starred_req = requests.Request('GET', self.nb_endpoint + '/reader/starred_story_hashes', 
                                        cookies=self.cookies)
         hashes = self.request_with_backoff(starred_req)
         statsd.increment('nb.http_requests.get')
@@ -132,14 +131,14 @@ class NewsblurConnector:
                         backoff = backoff * self.config.get('BACKOFF_FACTOR')
                         resp = session.send(prepared_req)
                         statsd.increment('nb.http_requests.count')
-            		statsd.increment('nb.http_requests.status_' + str(resp.status_code))
+                        statsd.increment('nb.http_requests.status_' + str(resp.status_code))
                     else:
                         logger.warn("Giving up after %s seconds for %s", backoff, req.url)
                         return None
                 elif resp.status_code in [403, 520]:
                     logger.warn("%s response, skipping %s and waiting %ss", resp.status_code,
                                 req.url, self.config.get('BACKOFF_START'))
-		    sleep(self.config.get('BACKOFF_START'))
+                    sleep(self.config.get('BACKOFF_START'))
                     return None
                 else:
                     logger.error("Request for %s returned unhandled %s response",
