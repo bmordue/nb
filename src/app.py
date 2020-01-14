@@ -62,6 +62,8 @@ def periodic_prune_starred():
 if __name__ == '__main__':
     logger.info('Started')
 
+    client_factory.get_db_client().ensure_config_table_exists()
+
     schedule.every().hour.do(periodic_populate)
     schedule.every().hour.do(periodic_add_comment_counts)
     schedule.every().day.at('23:00').do(periodic_prune_starred)

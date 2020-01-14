@@ -167,5 +167,8 @@ class SqliteClient(DbConnector):
 
     def execute_wrapper(self, query_str, query_params=None):
         cursor = self.conn.cursor()
-        cursor.execute(query_str, query_params)
+        try:
+            cursor.execute(query_str, query_params)
+        except sqlite3.Error:
+            logger.error('Failed to execute sqlite3 query: {}', query_str)
         return cursor
