@@ -8,8 +8,11 @@ SECRETS_DIR = os.getenv('SECRETS_DIR', '/run/secrets/')
 
 
 def get_secret(name):
-    with open(os.path.join(SECRETS_DIR, name), 'r') as f:
-        secret = f.read().strip()
+    if os.getenv(name) is not None:
+        secret = os.getenv(name)
+    else:
+        with open(os.path.join(SECRETS_DIR, name), 'r') as f:
+            secret = f.read().strip()
     return secret
 
 

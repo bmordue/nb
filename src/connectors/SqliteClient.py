@@ -29,7 +29,6 @@ class SqliteClient(DbConnector):
                  CHARACTER SET utf8'''
 
         cursor = self.execute_wrapper(create_table_query)
-        cursor.close()
         self.conn.commit()
         logger.info('Executed table creation query')
 
@@ -37,7 +36,6 @@ class SqliteClient(DbConnector):
     def list_urls(self):
         cursor = self.execute_wrapper("SELECT hash, url FROM stories")
         rows = cursor.fetchall()
-        cursor.close()
         logger.info('Found %s results.', len(rows))
         return rows
 
@@ -47,7 +45,6 @@ class SqliteClient(DbConnector):
             '''INSERT IGNORE INTO domains (nb_hash, domain, toplevel, toplevel_new) VALUES 
             (%s, %s, %s, %s)''',
             (nb_hash, domain, toplevel, toplevel_new))
-        cursor.close()
         self.conn.commit()
         logger.info('Added domain entry for %s', domain)
 
@@ -58,32 +55,28 @@ class SqliteClient(DbConnector):
     def list_stories_with_comments_fewer_than(self, threshold):
         cursor = self.execute_wrapper("SELECT hash FROM stories WHERE comments < %s AND starred = 1", (threshold,))
         rows = cursor.fetchall()
-        cursor.close()
         logger.info('Found %s starred stories with fewer than %s comments', len(rows), threshold)
         return rows
 
     @statsd.timed(STATSD_PREFIX + 'unstar')
     def unstar(self, nb_hash):
         cursor = self.execute_wrapper("UPDATE stories SET starred = 0 WHERE hash = %s", (nb_hash,))
-        cursor.close()
         self.conn.commit()
 
     def ensure_stories_table_exists(self):
         table_setup_query = '''CREATE TABLE IF NOT EXISTS stories
-             (hash VARCHAR(64) UNIQUE, hnurl TEXT, url TEXT, added TEXT, comments INTEGER,
-             starred BOOLEAN DEFAULT 1) CHARACTER SET utf8'''
+             (hash TEXT UNIQUE, hnurl TEXT, url TEXT, added TEXT, comments INTEGER,
+             starred BOOLEAN DEFAULT 1)'''
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             cursor = self.execute_wrapper(table_setup_query)
-        cursor.close()
         self.conn.commit()
 
     @statsd.timed(STATSD_PREFIX + 'add_story')
     def add_story(self, nb_hash, added, comments_url, story_url):
         insert_story_query = '''INSERT IGNORE INTO stories (hash, added, hnurl, url) VALUES (%s, %s, %s, %s)'''
         cursor = self.execute_wrapper(insert_story_query, (nb_hash, added, comments_url, story_url))
-        cursor.close()
         self.conn.commit()
         logger.info('Added story (%s)', nb_hash)
 
@@ -92,14 +85,12 @@ class SqliteClient(DbConnector):
         query = '''SELECT hnurl FROM stories WHERE comments IS NULL'''
         cursor = self.execute_wrapper(query)
         rows = cursor.fetchall()
-        cursor.close()
         return list(rows)
 
     @statsd.timed(STATSD_PREFIX + 'add_comment_count')
     def add_comment_count(self, comments_url, count):
         query = '''UPDATE stories SET comments = %s WHERE hnurl = %s'''
         cursor = self.execute_wrapper(query, (count, comments_url))
-        cursor.close()
         self.conn.commit()
         logger.info('Added comment count for %s (%s)', comments_url, count)
 
@@ -108,18 +99,15 @@ class SqliteClient(DbConnector):
 
     def ensure_config_table_exists(self):
         table_setup_query = '''CREATE TABLE IF NOT EXISTS config
-            (config_key VARCHAR(64) UNIQUE, config_value TEXT)
-             CHARACTER SET utf8'''
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            cursor = self.execute_wrapper(table_setup_query)
-        cursor.close()
+            (config_key TEXT UNIQUE, config_value TEXT)'''
+        cursor = self.conn.cursor()
+        #cursor = self.execute_wrapper(table_setup_query)
+        cursor.execute(table_setup_query)
         self.conn.commit()
 
     def read_config(self):
         query = '''SELECT * FROM config'''
         cursor = self.execute_wrapper(query)
-        cursor.close()
         rows = cursor.fetchall()
         return NbConfig(dict(rows))
 
@@ -127,7 +115,6 @@ class SqliteClient(DbConnector):
         query = '''REPLACE INTO config (config_key, config_value) VALUES (%s, %s)'''
         for key in config:
             cursor = self.execute_wrapper(query, (key, config[key]))
-        cursor.close()
         self.conn.commit()
 
     @statsd.timed(STATSD_PREFIX + 'add_hashes')
@@ -136,7 +123,6 @@ class SqliteClient(DbConnector):
         cursor = self.conn.cursor()
         for a_hash in hashes:
             cursor.execute(query, a_hash)
-        cursor.close()
         self.conn.commit()
 
     @statsd.timed(STATSD_PREFIX + 'read_hashes')
@@ -144,7 +130,6 @@ class SqliteClient(DbConnector):
         query = '''SELECT * FROM story_hashes WHERE processed <> 1 LIMIT %s'''
         cursor = self.conn.cursor()
         rows = cursor.execute(query, count)
-        cursor.close()
         return rows
 
     @statsd.timed(STATSD_PREFIX + 'mark_story_done')
@@ -152,7 +137,6 @@ class SqliteClient(DbConnector):
         query = '''UPDATE story_hashes SET processed = 1 WHERE hash = %s'''
         cursor = self.conn.cursor()
         cursor.execute(query, story_hash)
-        cursor.close()
         self.conn.commit()
 
     @statsd.timed(STATSD_PREFIX + 'list_comment_count_update_candidates')
@@ -162,13 +146,16 @@ class SqliteClient(DbConnector):
         cursor = self.conn.cursor()
         cursor.execute(query)
         rows = cursor.fetchall()
-        cursor.close()
         return list(rows)
 
     def execute_wrapper(self, query_str, query_params=None):
         cursor = self.conn.cursor()
         try:
-            cursor.execute(query_str, query_params)
+            if query_params is not None:
+                cursor.execute(query_str, query_params)
+            else:
+                cursor.execute(query_str)
         except sqlite3.Error:
             logger.error('Failed to execute sqlite3 query: {}', query_str)
         return cursor
+
