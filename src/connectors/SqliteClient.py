@@ -100,9 +100,7 @@ class SqliteClient(DbConnector):
     def ensure_config_table_exists(self):
         table_setup_query = '''CREATE TABLE IF NOT EXISTS config
             (config_key TEXT UNIQUE, config_value TEXT)'''
-        cursor = self.conn.cursor()
-        #cursor = self.execute_wrapper(table_setup_query)
-        cursor.execute(table_setup_query)
+        self.execute_wrapper(table_setup_query)
         self.conn.commit()
 
     def read_config(self):
@@ -114,37 +112,33 @@ class SqliteClient(DbConnector):
     def write_config(self, config):
         query = '''REPLACE INTO config (config_key, config_value) VALUES (%s, %s)'''
         for key in config:
-            cursor = self.execute_wrapper(query, (key, config[key]))
+            self.execute_wrapper(query, (key, config[key]))
         self.conn.commit()
 
     @statsd.timed(STATSD_PREFIX + 'add_hashes')
     def add_hashes(self, hashes):
         query = '''REPLACE INTO story_hashes VALUES (%s)'''
-        cursor = self.conn.cursor()
         for a_hash in hashes:
-            cursor.execute(query, a_hash)
+            self.execute_wrapper(query, a_hash)
         self.conn.commit()
 
     @statsd.timed(STATSD_PREFIX + 'read_hashes')
     def read_hashes(self, count):
         query = '''SELECT * FROM story_hashes WHERE processed <> 1 LIMIT %s'''
-        cursor = self.conn.cursor()
-        rows = cursor.execute(query, count)
+        rows = self.execute_wrapper(query, count)
         return rows
 
     @statsd.timed(STATSD_PREFIX + 'mark_story_done')
     def mark_story_done(self, story_hash):
         query = '''UPDATE story_hashes SET processed = 1 WHERE hash = %s'''
-        cursor = self.conn.cursor()
-        cursor.execute(query, story_hash)
+        self.execute_wrapper(query, story_hash)
         self.conn.commit()
 
     @statsd.timed(STATSD_PREFIX + 'list_comment_count_update_candidates')
     def list_comment_count_update_candidates(self):
         # modified - added < 7 days (comment window) AND now - modified > 1 hr (update interval)
         query = '''SELECT hnurl FROM stories WHERE comments IS NULL'''
-        cursor = self.conn.cursor()
-        cursor.execute(query)
+        cursor = self.execute_wrapper(query)
         rows = cursor.fetchall()
         return list(rows)
 
@@ -156,6 +150,6 @@ class SqliteClient(DbConnector):
             else:
                 cursor.execute(query_str)
         except sqlite3.Error:
-            logger.error('Failed to execute sqlite3 query: {}', query_str)
+            logger.error('Failed to execute_wrapper sqlite3 query: {}', query_str)
         return cursor
 
