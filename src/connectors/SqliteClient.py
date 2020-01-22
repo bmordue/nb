@@ -23,12 +23,11 @@ class SqliteClient(DbConnector):
 
     def ensure_domains_table_exists(self):
         create_table_query = '''CREATE TABLE IF NOT EXISTS domains
-                 (id INTEGER UNIQUE NOT NULL AUTO_INCREMENT, nb_hash VARCHAR(64) UNIQUE, 
-                 domain VARCHAR(128), PRIMARY KEY (id), toplevel VARCHAR(128), 
-                 toplevel_new VARCHAR(128), FOREIGN KEY (nb_hash) REFERENCES stories (hash) ) 
-                 CHARACTER SET utf8'''
+                 (id INTEGER UNIQUE NOT NULL AUTO_INCREMENT, nb_hash VARCHAR(64) UNIQUE,
+                 domain VARCHAR(128), PRIMARY KEY (id), toplevel VARCHAR(128),
+                 toplevel_new VARCHAR(128), FOREIGN KEY (nb_hash) REFERENCES stories (hash) )'''
 
-        cursor = self.execute_wrapper(create_table_query)
+        self.execute_wrapper(create_table_query)
         self.conn.commit()
         logger.info('Executed table creation query')
 
@@ -41,7 +40,7 @@ class SqliteClient(DbConnector):
 
     @statsd.timed(STATSD_PREFIX + 'insert_domain_entry')
     def insert_domain_entry(self, nb_hash, nb_url, domain, toplevel, toplevel_new):
-        cursor = self.execute_wrapper(
+        self.execute_wrapper(
             '''INSERT IGNORE INTO domains (nb_hash, domain, toplevel, toplevel_new) VALUES 
             (%s, %s, %s, %s)''',
             (nb_hash, domain, toplevel, toplevel_new))
@@ -49,7 +48,8 @@ class SqliteClient(DbConnector):
         logger.info('Added domain entry for %s', domain)
 
     def close_connection(self):
-        self.conn.close()
+        pass
+        #self.conn.close() #TODO: FIX
 
     @statsd.timed(STATSD_PREFIX + 'list_stories_with_comments_fewer_than')
     def list_stories_with_comments_fewer_than(self, threshold):
@@ -60,7 +60,7 @@ class SqliteClient(DbConnector):
 
     @statsd.timed(STATSD_PREFIX + 'unstar')
     def unstar(self, nb_hash):
-        cursor = self.execute_wrapper("UPDATE stories SET starred = 0 WHERE hash = %s", (nb_hash,))
+        self.execute_wrapper("UPDATE stories SET starred = 0 WHERE hash = %s", (nb_hash,))
         self.conn.commit()
 
     def ensure_stories_table_exists(self):
@@ -70,13 +70,13 @@ class SqliteClient(DbConnector):
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            cursor = self.execute_wrapper(table_setup_query)
+            self.execute_wrapper(table_setup_query)
         self.conn.commit()
 
     @statsd.timed(STATSD_PREFIX + 'add_story')
     def add_story(self, nb_hash, added, comments_url, story_url):
         insert_story_query = '''INSERT IGNORE INTO stories (hash, added, hnurl, url) VALUES (%s, %s, %s, %s)'''
-        cursor = self.execute_wrapper(insert_story_query, (nb_hash, added, comments_url, story_url))
+        self.execute_wrapper(insert_story_query, (nb_hash, added, comments_url, story_url))
         self.conn.commit()
         logger.info('Added story (%s)', nb_hash)
 
@@ -85,12 +85,12 @@ class SqliteClient(DbConnector):
         query = '''SELECT hnurl FROM stories WHERE comments IS NULL'''
         cursor = self.execute_wrapper(query)
         rows = cursor.fetchall()
-        return list(rows)
+        return rows
 
     @statsd.timed(STATSD_PREFIX + 'add_comment_count')
     def add_comment_count(self, comments_url, count):
         query = '''UPDATE stories SET comments = %s WHERE hnurl = %s'''
-        cursor = self.execute_wrapper(query, (count, comments_url))
+        self.execute_wrapper(query, (count, comments_url))
         self.conn.commit()
         logger.info('Added comment count for %s (%s)', comments_url, count)
 
@@ -125,8 +125,8 @@ class SqliteClient(DbConnector):
     @statsd.timed(STATSD_PREFIX + 'read_hashes')
     def read_hashes(self, count):
         query = '''SELECT * FROM story_hashes WHERE processed <> 1 LIMIT %s'''
-        rows = self.execute_wrapper(query, count)
-        return rows
+        cursor = self.execute_wrapper(query, count)
+        return cursor.fetchall()
 
     @statsd.timed(STATSD_PREFIX + 'mark_story_done')
     def mark_story_done(self, story_hash):
@@ -140,7 +140,7 @@ class SqliteClient(DbConnector):
         query = '''SELECT hnurl FROM stories WHERE comments IS NULL'''
         cursor = self.execute_wrapper(query)
         rows = cursor.fetchall()
-        return list(rows)
+        return rows
 
     def execute_wrapper(self, query_str, query_params=None):
         cursor = self.conn.cursor()
