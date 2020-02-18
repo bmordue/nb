@@ -31,6 +31,7 @@ def populate():
 
     batch_size = int(config.get('BATCH_SIZE'))
     logger.debug('Batch size is %s', batch_size)
+    logger.debug('MAX_PARSE is %s', config.get('MAX_PARSE'))
 
     i = 0
     count_batches = 0

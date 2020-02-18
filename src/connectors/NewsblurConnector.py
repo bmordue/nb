@@ -26,6 +26,7 @@ class NewsblurConnector:
     def login(self):
         """ log in and save cookies """
         r = requests.post(self.nb_endpoint + '/api/login', self.credentials)
+        logger.debug('NewsBlur login response code: %s', r.status_code)
         statsd.increment('nb.http_requests.post')
         self.cookies = r.cookies
 
