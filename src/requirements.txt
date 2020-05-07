@@ -1,4 +1,4 @@
-beautifulsoup4==4.8.1
+beautifulsoup4==4.9.0
 requests==2.22.0
 datadog==0.30.0
 rollbar==0.14.7
