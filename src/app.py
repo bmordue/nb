@@ -5,6 +5,7 @@ import time
 from tasks.add_comment_counts import add_comment_counts
 from tasks.add_domains import add_domains
 from tasks.populate import populate
+from tasks.populate import update_hash_list
 from tasks.prune import prune_starred
 
 from utility import client_factory
@@ -21,6 +22,12 @@ def get_config(task):
     config = db_client.read_config()
     logger.debug('Config for %s: %s', task, config)
     return config
+
+
+def periodic_update_hash_list():
+    logger.info('Running scheduled update hash list task')
+    update_hash_list()
+    logger.info('Finished scheduled update hash list task')
 
 
 def periodic_populate():
@@ -64,6 +71,7 @@ if __name__ == '__main__':
 
     client_factory.get_db_client().ensure_config_table_exists()
 
+    schedule.every().hour.do(periodic_update_hash_list)
     schedule.every().hour.do(periodic_populate)
     schedule.every().hour.do(periodic_add_comment_counts)
     schedule.every().day.at('23:00').do(periodic_prune_starred)
