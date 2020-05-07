@@ -1,5 +1,5 @@
 beautifulsoup4==4.8.1
 requests==2.22.0
-datadog==0.30.0
+datadog==0.36.0
 rollbar==0.14.7
 schedule==0.6.0
