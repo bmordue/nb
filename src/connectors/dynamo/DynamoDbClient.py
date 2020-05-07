@@ -61,11 +61,11 @@ class DynamoDbClient(DbConnector):
     # select hash, url from stories
     def list_urls(self):
         stories = StoryModel.scan()
-        return list(map(lambda s: {'nb_hash': s.nb_hash, 'url': s.url}, stories))
+        return list([{'nb_hash': s.nb_hash, 'url': s.url} for s in stories])
 
     def unstar(self, nb_hash):
         stories = StoryModel.scan(StoryModel.nb_hash == nb_hash)
-        story = stories.next() # only expect one result
+        story = next(stories) # only expect one result
         story.starred = False
         story.update(
             actions=[

@@ -25,7 +25,7 @@ class MySqlClient(DbConnector):
         self.password = password
         self.db_name = db_name
 
-	logger.info("Attempt to connect to DB %s on %s as user %s", db_name, host, user)
+        logger.info("Attempt to connect to DB %s on %s as user %s", db_name, host, user)
 
         self.conn = MySQLdb.connect(host=self.host,
                                     user=self.user,

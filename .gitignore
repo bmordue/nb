@@ -64,3 +64,4 @@ target/
 .c9/
 
 .env
+secrets/

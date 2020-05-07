@@ -1,0 +1,24 @@
+version: '3.5'
+networks:
+  monitoring:
+    external: true
+services:
+  nb:
+    image: nb:latest
+    working_dir: /work
+    volumes:
+      - .:/work
+    networks:
+      - monitoring
+    secrets:
+      - NB_USERNAME
+      - NB_PASSWORD
+
+secrets:
+  NB_USERNAME:
+    external: true
+    name: NB_USERNAME
+  NB_PASSWORD:
+    external: true
+    name: NB_PASSWORD
+
