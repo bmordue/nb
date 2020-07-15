@@ -39,7 +39,13 @@ class NewsblurConnector:
 
         try:
             return hashes.json()['starred_story_hashes']
-        except (AttributeError, ValueError) as e:
+        except AttributeError as e:
+            logger.error("Attribute error in get_nb_has_list()")
+            rollbar.report_exc_info()
+            logger.error(e)
+        except ValueError as e:
+            if (hashes is not null):
+                logger.error(hashes.json())
             rollbar.report_exc_info()
             msg = 'Failed to decode JSON'
             logger.error(msg)
