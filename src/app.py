@@ -69,7 +69,10 @@ def periodic_prune_starred():
 if __name__ == '__main__':
     logger.info('Started')
 
-    client_factory.get_db_client().ensure_config_table_exists()
+    db = client_factory.get_db_client()
+    db.ensure_config_table_exists()
+    db.ensure_stories_table_exists()
+    db.ensure_domains_table_exists()
 
     schedule.every().hour.do(periodic_update_hash_list)
     schedule.every().hour.do(periodic_populate)
