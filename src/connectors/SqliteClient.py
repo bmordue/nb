@@ -23,9 +23,9 @@ class SqliteClient(DbConnector):
 
     def ensure_domains_table_exists(self):
         create_table_query = '''CREATE TABLE IF NOT EXISTS domains
-                 (id INTEGER UNIQUE NOT NULL AUTO_INCREMENT, nb_hash VARCHAR(64) UNIQUE,
-                 domain VARCHAR(128), PRIMARY KEY (id), toplevel VARCHAR(128),
-                 toplevel_new VARCHAR(128), FOREIGN KEY (nb_hash) REFERENCES stories (hash) )'''
+                 (id INTEGER PRIMARY KEY ASC, nb_hash TEXT UNIQUE,
+                 domain TEXT, toplevel TEXT,
+                 toplevel_new TEXT, FOREIGN KEY (nb_hash) REFERENCES stories (hash) )'''
 
         self.execute_wrapper(create_table_query)
         self.conn.commit()
@@ -41,7 +41,7 @@ class SqliteClient(DbConnector):
     @statsd.timed(STATSD_PREFIX + 'insert_domain_entry')
     def insert_domain_entry(self, nb_hash, nb_url, domain, toplevel, toplevel_new):
         self.execute_wrapper(
-            '''INSERT IGNORE INTO domains (nb_hash, domain, toplevel, toplevel_new) VALUES 
+            '''INSERT IGNORE INTO domains (nb_hash, domain, toplevel, toplevel_new) VALUES
             (?, ?, ?, ?)''',
             (nb_hash, domain, toplevel, toplevel_new))
         self.conn.commit()
@@ -74,7 +74,7 @@ class SqliteClient(DbConnector):
         self.conn.commit()
 
         table_setup_query = '''CREATE TABLE IF NOT EXISTS story_hashes (hash TEXT UNIQUE, locked BOOLEAN,
-              processed BOOLEAN, created DATETIME DEFAULT CURRENT_TIMESTAMP, modified DATETIME DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP)'''
+              processed BOOLEAN, created DATETIME DEFAULT CURRENT_TIMESTAMP, modified DATETIME DEFAULT CURRENT_TIMESTAMP)'''
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
