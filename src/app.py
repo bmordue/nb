@@ -74,6 +74,9 @@ if __name__ == '__main__':
     db.ensure_stories_table_exists()
     db.ensure_domains_table_exists()
 
+    periodic_update_hash_list()
+    periodic_populate()
+
     schedule.every().hour.do(periodic_update_hash_list)
     schedule.every().hour.do(periodic_populate)
     schedule.every().hour.do(periodic_add_comment_counts)
