@@ -125,15 +125,18 @@ class SqliteClient(DbConnector):
 
     @statsd.timed(STATSD_PREFIX + 'add_hashes')
     def add_hashes(self, hashes):
-        query = '''REPLACE INTO story_hashes VALUES (?)'''
+        query = '''REPLACE INTO story_hashes (hash) VALUES (?)'''
         for a_hash in hashes:
-            self.execute_wrapper(query, a_hash)
+            self.execute_wrapper(query, (a_hash,))
         self.conn.commit()
 
     @statsd.timed(STATSD_PREFIX + 'read_hashes')
     def read_hashes(self, count):
-        query = '''SELECT * FROM story_hashes WHERE processed <> 1 LIMIT ?'''
-        cursor = self.execute_wrapper(query, count)
+        query = '''SELECT * FROM story_hashes WHERE processed <> 1 LIMIT {0}'''.format(count)
+#        count = count if count is not None else 20
+        logger.debug("read %s hashes", count)
+#        cursor = self.execute_wrapper(query, count)
+        cursor = self.execute_wrapper(query)
         return cursor.fetchall()
 
     @statsd.timed(STATSD_PREFIX + 'mark_story_done')
@@ -158,8 +161,8 @@ class SqliteClient(DbConnector):
             else:
                 cursor.execute(query_str)
         except sqlite3.Error as e:
-            logger.error('Failed to execute_wrapper sqlite3 query: {}', query_str)
-            logger.error('execute_wrapper, query_params: {}', query_params)
-            logger.error('execute_wrapper sqlite3.Error: {}', e.args[0])
+            logger.error('Failed to execute_wrapper sqlite3 query: %s', query_str)
+            logger.error('execute_wrapper, query_params: %s', query_params)
+            logger.error('execute_wrapper sqlite3.Error: %s', e.args[0])
         return cursor
 
