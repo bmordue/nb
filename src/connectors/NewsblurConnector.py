@@ -121,7 +121,10 @@ class NewsblurConnector:
     @statsd.timed('nb.NewsblurConnector.request_with_backoff')
     def request_with_backoff(self, req):
         sleep(float(self.config.get('POLITE_WAIT')))
-        backoff = self.config.get('BACKOFF_START')
+        backoff = int(self.config.get('BACKOFF_START'))
+        backoffMax = int(self.config.get('BACKOFF_MAX'))
+        backoffFactor = float(self.config.get('BACKOFF_FACTOR'))
+        backoffStart = int(self.config.get('BACKOFF_START'))
         session = requests.Session()
         prepared_req = session.prepare_request(req)
         try:
@@ -132,21 +135,21 @@ class NewsblurConnector:
                 if resp.status_code in [429, 500, 502, 503, 504]:  # exponential backoff
                     logger.info(
                         "Request for %s returned %s response", req.url, resp.status_code)
-                    if backoff < self.config.get('BACKOFF_MAX'):
+                    if backoff < backoffMax:
                         logger.info("Backing off %s seconds", backoff)
                         sleep(backoff)
-                        backoff = backoff * self.config.get('BACKOFF_FACTOR')
+                        backoff = backoff * backoffFactor
                         resp = session.send(prepared_req)
                         statsd.increment('nb.http_requests.count')
                         statsd.increment('nb.http_requests.status_' + str(resp.status_code))
                     else:
-                        logger.warn("Giving up after %s seconds for %s", backoff, req.url)
-                        return None
+                        logger.warn("Giving up after %s seconds for %s (BACKOFF_MAX is %s)", backoff, req.url, backoffMax)
+                        raise requests.exceptions.RequestException()
                 elif resp.status_code in [403, 520]:
                     logger.warn("%s response, skipping %s and waiting %ss", resp.status_code,
                                 req.url, self.config.get('BACKOFF_START'))
-                    sleep(self.config.get('BACKOFF_START'))
-                    return None
+                    sleep(backoffStart)
+                    raise requests.exceptions.RequestException()
                 else:
                     logger.error("Request for %s returned unhandled %s response",
                                  req.url, resp.status_code)
@@ -154,6 +157,7 @@ class NewsblurConnector:
             return resp
         except requests.exceptions.RequestException as e:
             rollbar.report_exc_info()
+            logger.error("Request failed")
             logger.info("url is: %s", req.url)
             logger.error(e)
             return None
