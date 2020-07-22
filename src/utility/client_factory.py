@@ -17,7 +17,7 @@ def get_secret(name):
 
 
 def get_db_client():
-    logger.debug('DB: sqlite file')
+#    logger.debug('DB: sqlite file')
     return SqliteClient()
 
 

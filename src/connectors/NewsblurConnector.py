@@ -59,7 +59,7 @@ class NewsblurConnector:
         """ get a list of stories corresponding to a list of hashes """
         req_str = self.nb_endpoint + '/reader/starred_stories?'
         for a_hash in batch:
-            req_str += 'h=' + a_hash + '&'
+            req_str += 'h=' + str(a_hash[0]) + '&'
         stories = {}
         stories_req = requests.Request('GET', req_str, cookies=self.cookies)
         try:

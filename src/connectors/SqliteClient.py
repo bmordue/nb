@@ -18,7 +18,7 @@ class SqliteClient(DbConnector):
     def __init__(self):
         DbConnector.__init__(self)
         db_file = 'nb.sqlite'
-        logger.info("Attempt to connect to DB file %s", db_file)
+#        logger.info("Attempt to connect to DB file %s", db_file)
         self.conn = sqlite3.connect(db_file)
 
     def ensure_domains_table_exists(self):
@@ -41,11 +41,11 @@ class SqliteClient(DbConnector):
     @statsd.timed(STATSD_PREFIX + 'insert_domain_entry')
     def insert_domain_entry(self, nb_hash, nb_url, domain, toplevel, toplevel_new):
         self.execute_wrapper(
-            '''INSERT IGNORE INTO domains (nb_hash, domain, toplevel, toplevel_new) VALUES
+            '''INSERT OR IGNORE INTO domains (nb_hash, domain, toplevel, toplevel_new) VALUES
             (?, ?, ?, ?)''',
             (nb_hash, domain, toplevel, toplevel_new))
         self.conn.commit()
-        logger.info('Added domain entry for %s', domain)
+#        logger.info('Added domain entry for %s', domain)
 
     def close_connection(self):
         pass
@@ -73,8 +73,8 @@ class SqliteClient(DbConnector):
             self.execute_wrapper(table_setup_query)
         self.conn.commit()
 
-        table_setup_query = '''CREATE TABLE IF NOT EXISTS story_hashes (hash TEXT UNIQUE, locked BOOLEAN,
-              processed BOOLEAN, created DATETIME DEFAULT CURRENT_TIMESTAMP, modified DATETIME DEFAULT CURRENT_TIMESTAMP)'''
+        table_setup_query = '''CREATE TABLE IF NOT EXISTS story_hashes (hash TEXT UNIQUE, locked BOOLEAN DEFAULT 0,
+              processed BOOLEAN DEFAULT 0, created DATETIME DEFAULT CURRENT_TIMESTAMP, modified DATETIME DEFAULT CURRENT_TIMESTAMP)'''
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -83,7 +83,7 @@ class SqliteClient(DbConnector):
 
     @statsd.timed(STATSD_PREFIX + 'add_story')
     def add_story(self, nb_hash, added, comments_url, story_url):
-        insert_story_query = '''INSERT IGNORE INTO stories (hash, added, hnurl, url) VALUES (?, ?, ?, ?)'''
+        insert_story_query = '''INSERT OR IGNORE INTO stories (hash, added, hnurl, url) VALUES (?, ?, ?, ?)'''
         self.execute_wrapper(insert_story_query, (nb_hash, added, comments_url, story_url))
         self.conn.commit()
         logger.info('Added story (%s)', nb_hash)
@@ -132,9 +132,9 @@ class SqliteClient(DbConnector):
 
     @statsd.timed(STATSD_PREFIX + 'read_hashes')
     def read_hashes(self, count):
-        query = '''SELECT * FROM story_hashes WHERE processed <> 1 LIMIT {0}'''.format(count)
+        query = '''SELECT hash FROM story_hashes WHERE processed <> 1 LIMIT {0}'''.format(count)
 #        count = count if count is not None else 20
-        logger.debug("read %s hashes", count)
+        logger.debug("read %s hashes query: %s", count, query)
 #        cursor = self.execute_wrapper(query, count)
         cursor = self.execute_wrapper(query)
         return cursor.fetchall()
@@ -142,7 +142,7 @@ class SqliteClient(DbConnector):
     @statsd.timed(STATSD_PREFIX + 'mark_story_done')
     def mark_story_done(self, story_hash):
         query = '''UPDATE story_hashes SET processed = 1 WHERE hash = ?'''
-        self.execute_wrapper(query, story_hash)
+        self.execute_wrapper(query, (story_hash,))
         self.conn.commit()
 
     @statsd.timed(STATSD_PREFIX + 'list_comment_count_update_candidates')

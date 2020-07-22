@@ -20,7 +20,7 @@ initialize(statsd_host='dd_agent')
 def get_config(task):
     db_client = client_factory.get_db_client()
     config = db_client.read_config()
-    logger.debug('Config for %s: %s', task, config)
+#    logger.debug('Config for %s: %s', task, config)
     return config
 
 

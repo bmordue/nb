@@ -152,7 +152,7 @@ class MySqlClient(DbConnector):
 
     @statsd.timed(STATSD_PREFIX + 'read_hashes')
     def read_hashes(self, count):
-        query = '''SELECT * FROM story_hashes WHERE processed <> 1 LIMIT %s'''
+        query = '''SELECT hash FROM story_hashes WHERE processed <> 1 LIMIT %s'''
         cursor = self.conn.cursor()
         rows = cursor.execute(query, count)
         cursor.close()
