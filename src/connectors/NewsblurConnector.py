@@ -39,7 +39,13 @@ class NewsblurConnector:
 
         try:
             return hashes.json()['starred_story_hashes']
-        except (AttributeError, ValueError) as e:
+        except AttributeError as e:
+            logger.error("Attribute error in get_nb_has_list()")
+            rollbar.report_exc_info()
+            logger.error(e)
+        except ValueError as e:
+            if (hashes is not null):
+                logger.error(hashes.json())
             rollbar.report_exc_info()
             msg = 'Failed to decode JSON'
             logger.error(msg)
@@ -53,7 +59,7 @@ class NewsblurConnector:
         """ get a list of stories corresponding to a list of hashes """
         req_str = self.nb_endpoint + '/reader/starred_stories?'
         for a_hash in batch:
-            req_str += 'h=' + a_hash + '&'
+            req_str += 'h=' + str(a_hash[0]) + '&'
         stories = {}
         stories_req = requests.Request('GET', req_str, cookies=self.cookies)
         try:
@@ -117,7 +123,10 @@ class NewsblurConnector:
     @statsd.timed('nb.NewsblurConnector.request_with_backoff')
     def request_with_backoff(self, req):
         sleep(float(self.config.get('POLITE_WAIT')))
-        backoff = self.config.get('BACKOFF_START')
+        backoff = int(self.config.get('BACKOFF_START'))
+        backoffMax = int(self.config.get('BACKOFF_MAX'))
+        backoffFactor = float(self.config.get('BACKOFF_FACTOR'))
+        backoffStart = int(self.config.get('BACKOFF_START'))
         session = requests.Session()
         prepared_req = session.prepare_request(req)
         try:
@@ -128,28 +137,29 @@ class NewsblurConnector:
                 if resp.status_code in [429, 500, 502, 503, 504]:  # exponential backoff
                     logger.info(
                         "Request for %s returned %s response", req.url, resp.status_code)
-                    if backoff < self.config.get('BACKOFF_MAX'):
+                    if backoff < backoffMax:
                         logger.info("Backing off %s seconds", backoff)
                         sleep(backoff)
-                        backoff = backoff * self.config.get('BACKOFF_FACTOR')
+                        backoff = backoff * backoffFactor
                         resp = session.send(prepared_req)
                         statsd.increment('nb.http_requests.count')
                         statsd.increment('nb.http_requests.status_' + str(resp.status_code))
                     else:
-                        logger.warn("Giving up after %s seconds for %s", backoff, req.url)
+                        logger.warn("Giving up after %s seconds for %s (BACKOFF_MAX is %s)", backoff, req.url, backoffMax)
                         return None
                 elif resp.status_code in [403, 520]:
                     logger.warn("%s response, skipping %s and waiting %ss", resp.status_code,
                                 req.url, self.config.get('BACKOFF_START'))
-                    sleep(self.config.get('BACKOFF_START'))
+                    sleep(backoffStart)
                     return None
                 else:
                     logger.error("Request for %s returned unhandled %s response",
                                  req.url, resp.status_code)
-                    raise requests.exceptions.RequestException()
+                    return None
             return resp
         except requests.exceptions.RequestException as e:
             rollbar.report_exc_info()
+            logger.error("Request failed")
             logger.info("url is: %s", req.url)
             logger.error(e)
             return None

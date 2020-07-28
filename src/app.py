@@ -20,7 +20,7 @@ initialize(statsd_host='dd_agent')
 def get_config(task):
     db_client = client_factory.get_db_client()
     config = db_client.read_config()
-    logger.debug('Config for %s: %s', task, config)
+#    logger.debug('Config for %s: %s', task, config)
     return config
 
 
@@ -69,7 +69,13 @@ def periodic_prune_starred():
 if __name__ == '__main__':
     logger.info('Started')
 
-    client_factory.get_db_client().ensure_config_table_exists()
+    db = client_factory.get_db_client()
+    db.ensure_config_table_exists()
+    db.ensure_stories_table_exists()
+    db.ensure_domains_table_exists()
+
+    periodic_update_hash_list()
+    periodic_populate()
 
     schedule.every().hour.do(periodic_update_hash_list)
     schedule.every().hour.do(periodic_populate)
