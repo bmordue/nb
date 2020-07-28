@@ -144,16 +144,16 @@ class NewsblurConnector:
                         statsd.increment('nb.http_requests.status_' + str(resp.status_code))
                     else:
                         logger.warn("Giving up after %s seconds for %s (BACKOFF_MAX is %s)", backoff, req.url, backoffMax)
-                        raise requests.exceptions.RequestException()
+                        return None
                 elif resp.status_code in [403, 520]:
                     logger.warn("%s response, skipping %s and waiting %ss", resp.status_code,
                                 req.url, self.config.get('BACKOFF_START'))
                     sleep(backoffStart)
-                    raise requests.exceptions.RequestException()
+                    return None
                 else:
                     logger.error("Request for %s returned unhandled %s response",
                                  req.url, resp.status_code)
-                    raise requests.exceptions.RequestException()
+                    return None
             return resp
         except requests.exceptions.RequestException as e:
             rollbar.report_exc_info()

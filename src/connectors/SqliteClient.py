@@ -86,7 +86,7 @@ class SqliteClient(DbConnector):
         insert_story_query = '''INSERT OR IGNORE INTO stories (hash, added, hnurl, url) VALUES (?, ?, ?, ?)'''
         self.execute_wrapper(insert_story_query, (nb_hash, added, comments_url, story_url))
         self.conn.commit()
-        logger.info('Added story (%s)', nb_hash)
+#        logger.debug('Added story (%s)', nb_hash)
 
     @statsd.timed(STATSD_PREFIX + 'list_stories_without_comment_count')
     def list_stories_without_comment_count(self):
