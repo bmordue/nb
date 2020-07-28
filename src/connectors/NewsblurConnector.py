@@ -85,8 +85,10 @@ class NewsblurConnector:
         resp = self.request_with_backoff(req)
         if resp is None:
             return None
-        story_text = self.request_with_backoff(req).text
-        return self.parse_story(story_text)
+        story = self.request_with_backoff(req)
+        if story is None:
+            return None
+        return self.parse_story(story.text)
 
     # Parse HN story to find how many comments there are
     @statsd.timed('nb.NewsblurConnector.parse_story')
