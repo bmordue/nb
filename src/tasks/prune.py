@@ -10,7 +10,7 @@ logger = nb_logging.setup_logger('prune')
 def prune_starred():
     db_client = client_factory.get_db_client()
     config = db_client.read_config()
-    rows = db_client.list_stories_with_comments_fewer_than(config.get('COMMENTS_THRESHOLD'))
+    rows = db_client.list_stories_with_comments_fewer_than(int(config.get('COMMENTS_THRESHOLD')))
     nb_client = client_factory.get_newsblur_client()
     nb_client.login()
 
