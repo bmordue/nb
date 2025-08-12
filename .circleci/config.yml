@@ -2,7 +2,17 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/ruby:2.4.1
+      - image: cimg/python:3.12
     steps:
       - checkout
-      - run: echo "A first hello"
+      - run: 
+          name: Install dependencies
+          command: |
+            cd src
+            pip install -r requirements.txt
+      - run:
+          name: Test Python 3 compatibility
+          command: |
+            cd src
+            python -m py_compile app.py
+            find . -name "*.py" -exec python -m py_compile {} \;
