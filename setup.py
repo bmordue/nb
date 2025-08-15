@@ -9,7 +9,7 @@ setup(
     python_requires=">=3.7",
     install_requires=[
         "beautifulsoup4==4.9.3",
-        "requests==2.32.0",
+        "requests==2.32.4",
         "datadog==0.45.0",
         "rollbar==0.16.3",
         "schedule==0.6.0",
