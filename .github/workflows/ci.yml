@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        cd src
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    # - name: Lint with flake8 (if available)
+    #   run: |
+    #     cd src
+    #     # Install flake8 for basic linting
+    #     pip install flake8
+    #     # Stop the build if there are Python syntax errors or undefined names
+    #     flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+    #     # Exit-zero treats all errors as warnings
+    #     flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        
+    - name: Check code can import without errors
+      run: |
+        cd src
+        python -c "
+        import sys
+        try:
+            import app
+            print('✓ app.py imports successfully')
+        except Exception as e:
+            print(f'✗ Failed to import app.py: {e}')
+            sys.exit(1)
+        "
+
+  docker-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Build Docker image
+      run: |
+        cd src
+        docker build -t nb:test .
+        
+    - name: Test Docker image
+      run: |
+        # Check that the image was built successfully
+        docker images nb:test
