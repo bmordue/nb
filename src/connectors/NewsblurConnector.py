@@ -22,6 +22,32 @@ class NewsblurConnector:
 
         self.credentials = {'username': username, 'password': password}
 
+    def _get_numeric_config(self, key, config_type=int, default=None):
+        """Safely get a numeric config value with proper type conversion."""
+        try:
+            # Check if the key exists first by trying to get it
+            try:
+                value = self.config.get(key)
+            except KeyError:
+                # Key doesn't exist, use default if provided
+                if default is not None:
+                    logger.warning(f"Config key '{key}' not found, using default value {default}")
+                    return default
+                raise ValueError(f"Config key '{key}' not found and no default provided")
+            
+            if value is None:
+                if default is not None:
+                    logger.warning(f"Config key '{key}' is None, using default value {default}")
+                    return default
+                raise ValueError(f"Config key '{key}' is None")
+            return config_type(value)
+        except (ValueError, TypeError) as e:
+            logger.error(f"Failed to convert config '{key}' to {config_type.__name__}: {e}")
+            if default is not None:
+                logger.warning(f"Using default value {default} for config '{key}'")
+                return default
+            raise
+
     @statsd.timed('nb.NewsblurConnector.login')
     def login(self):
         """ log in and save cookies """
@@ -126,11 +152,11 @@ class NewsblurConnector:
 
     @statsd.timed('nb.NewsblurConnector.request_with_backoff')
     def request_with_backoff(self, req):
-        sleep(float(self.config.get('POLITE_WAIT')))
-        backoff = int(self.config.get('BACKOFF_START'))
-        backoffMax = int(self.config.get('BACKOFF_MAX'))
-        backoffFactor = float(self.config.get('BACKOFF_FACTOR'))
-        backoffStart = int(self.config.get('BACKOFF_START'))
+        sleep(self._get_numeric_config('POLITE_WAIT', float, 1.0))
+        backoff = self._get_numeric_config('BACKOFF_START', int, 5)
+        backoffMax = self._get_numeric_config('BACKOFF_MAX', int, 120)
+        backoffFactor = self._get_numeric_config('BACKOFF_FACTOR', float, 2.0)
+        backoffStart = backoff  # Use the same value as backoff
         session = requests.Session()
         prepared_req = session.prepare_request(req)
         try:
@@ -153,7 +179,7 @@ class NewsblurConnector:
                         return None
                 elif resp.status_code in [403, 520]:
                     logger.warn("%s response, skipping %s and waiting %ss", resp.status_code,
-                                req.url, self.config.get('BACKOFF_START'))
+                                req.url, backoffStart)
                     sleep(backoffStart)
                     return None
                 else:
