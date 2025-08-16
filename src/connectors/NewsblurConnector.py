@@ -51,10 +51,15 @@ class NewsblurConnector:
     @statsd.timed('nb.NewsblurConnector.login')
     def login(self):
         """ log in and save cookies """
-        r = requests.post(self.nb_endpoint + '/api/login', self.credentials)
-        logger.debug('NewsBlur login response code: %s', r.status_code)
-        statsd.increment('nb.http_requests.post')
-        self.cookies = r.cookies
+        login_req = requests.Request('POST', self.nb_endpoint + '/api/login', data=self.credentials)
+        r = self.request_with_backoff(login_req)
+        if r is not None:
+            logger.debug('NewsBlur login response code: %s', r.status_code)
+            statsd.increment('nb.http_requests.post')
+            self.cookies = r.cookies
+        else:
+            logger.error('Login failed: request_with_backoff returned None')
+            raise requests.exceptions.ConnectionError('Failed to login to NewsBlur after retries')
 
     @statsd.timed('nb.NewsblurConnector.get_nb_hash_list')
     def get_nb_hash_list(self):
