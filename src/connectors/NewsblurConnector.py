@@ -103,7 +103,11 @@ class NewsblurConnector:
         story_list = []
         if stories is None:
             logger.error('No response received from NewsBlur API')
-            return story_list
+        if stories is None:
+            logger.error('No response received from NewsBlur API')
+            return []
+        statsd.increment('nb.http_requests.get')
+        story_list = []
         try:
             story_list = json.loads(stories.text)['stories']
         except ValueError as e:
