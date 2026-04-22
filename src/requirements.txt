@@ -4,7 +4,7 @@
 
 
 
-urllib3>=2.5.0 # not directly required, pinned by Snyk to avoid a vulnerability
+urllib3>=2.6.3 # not directly required, pinned by Snyk to avoid a vulnerability
 
 beautifulsoup4==4.14.3
 requests==2.33.1
