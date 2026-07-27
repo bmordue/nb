@@ -8,7 +8,7 @@ urllib3>=2.7.0 # not directly required, pinned by Snyk to avoid a vulnerability
 
 beautifulsoup4==4.15.0
 requests==2.34.2
-datadog==0.52.2
+datadog==0.53.0
 rollbar==1.4.0
 schedule==1.2.2
 
