@@ -12,4 +12,4 @@ datadog==0.53.0
 rollbar==1.4.0
 schedule==1.2.2
 
-soupsieve>=2.9.1 # not directly required, pinned by Snyk to avoid a vulnerability
+soupsieve>=2.9.2 # not directly required, pinned by Snyk to avoid a vulnerability
